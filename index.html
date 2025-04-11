@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor de Contenido</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos adicionales específicos para el visor */
+        #display-area {
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Para que iframe no muestre barras de scroll si no cabe */
+        }
+        #display-area img,
+        #display-area video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Mantiene la proporción, ajusta dentro del contenedor */
+        }
+         #display-area iframe {
+            width: 100%;
+            height: 100%;
+            border: none; /* Sin borde para el iframe */
+        }
+    </style>
+</head>
+<body>
+    <div id="display-area">
+        <!-- El contenido (imagen, video, iframe) se insertará aquí -->
+    </div>
+
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // ---------------------------------------------------------------
+        // --- ¡¡¡ IMPORTANTE: CONFIGURACIÓN DE FIREBASE VA AQUÍ !!! ---
+        // ---------------------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyAir6pUHwf-vCJ7Tt8yDBpmw4n1jml7oE8",
+  authDomain: "visor-negocio.firebaseapp.com",
+  databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
+  projectId: "visor-negocio",
+  storageBucket: "visor-negocio.firebasestorage.app",
+  messagingSenderId: "113061044521",
+  appId: "1:113061044521:web:a397b454b03b27da041738"
+};
+        // ---------------------------------------------------------------
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const playlistRef = database.ref('playlist'); // Referencia a la lista en la base de datos
+
+        let currentPlaylist = [];
+        let currentItemIndex = 0;
+        let currentTimeoutId = null; // Para poder cancelar el temporizador si la lista cambia
+
+        const displayArea = document.getElementById('display-area');
+
+        function playNextItem() {
+            // Limpiar temporizador anterior si existe
+            if (currentTimeoutId) {
+                clearTimeout(currentTimeoutId);
+                currentTimeoutId = null;
+            }
+             // Limpiar contenido anterior
+            displayArea.innerHTML = '';
+
+            if (!currentPlaylist || currentPlaylist.length === 0) {
+                console.log("Playlist vacía o no cargada.");
+                // Opcional: mostrar mensaje de "playlist vacía"
+                 displayArea.innerHTML = '<p style="color: white;">Esperando contenido...</p>';
+                return;
+            }
+
+            // Asegurar que el índice sea válido y hacer loop
+            if (currentItemIndex >= currentPlaylist.length) {
+                currentItemIndex = 0;
+            }
+
+            const item = currentPlaylist[currentItemIndex];
+            console.log(`Mostrando item ${currentItemIndex}: ${item.url} (Tipo: ${item.type})`);
+
+            switch (item.type) {
+                case 'image':
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.onerror = () => { // Si hay error cargando la imagen
+                       console.error("Error cargando imagen:", item.url);
+                       playNextItem(); // Saltar a la siguiente
+                    };
+                    displayArea.appendChild(img);
+                    currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
+                    break;
+
+                case 'video':
+                    const video = document.createElement('video');
+                    video.src = item.url;
+                    video.autoplay = true; // Intentar autoplay
+                    video.muted = true;    // Autoplay suele requerir silencio
+                    video.controls = false; // Sin controles visibles
+                    video.onerror = () => {
+                        console.error("Error cargando video:", item.url);
+                        playNextItem(); // Saltar al siguiente
+                    };
+                    video.addEventListener('ended', playNextItem); // Avanzar al terminar
+                    // Si el video no puede hacer autoplay (raro si está muted), podría quedarse pegado.
+                    // Un fallback podría ser un timeout largo por si acaso, pero complica.
+                    displayArea.appendChild(video);
+                    // No ponemos timeout aquí, el evento 'ended' se encarga.
+                    break;
+
+                case 'webpage':
+                    const iframe = document.createElement('iframe');
+                    iframe.src = item.url;
+                     iframe.onerror = () => { // Ojo: onerror en iframe es limitado
+                        console.warn("Podría haber problemas cargando la web (iframe):", item.url);
+                        // Igual ponemos el timeout porque puede que no cargue pero no dé error real
+                    };
+                    displayArea.appendChild(iframe);
+                    currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
+                    break;
+
+                default:
+                    console.warn("Tipo de item desconocido:", item.type);
+                    // Saltar al siguiente inmediatamente si el tipo no es reconocido
+                    setTimeout(playNextItem, 100); // Pequeño delay para evitar bucles infinitos rápidos
+                    break;
+            }
+
+            currentItemIndex++; // Apuntar al siguiente para la próxima vez
+        }
+
+        // Escuchar cambios en la lista de reproducción en Firebase
+        playlistRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            // Firebase devuelve un objeto si las claves son numéricas, convertir a array
+            currentPlaylist = data ? Object.values(data) : [];
+            console.log("Playlist actualizada desde Firebase:", currentPlaylist);
+            currentItemIndex = 0; // Reiniciar al principio con la nueva lista
+            playNextItem(); // Empezar a reproducir la nueva lista inmediatamente
+        }, (error) => {
+            console.error("Error leyendo la playlist de Firebase:", error);
+            displayArea.innerHTML = '<p style="color: red;">Error conectando a la base de datos.</p>';
+        });
+
+    </script>
+</body>
+</html>

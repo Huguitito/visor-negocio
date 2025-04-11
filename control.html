@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Contenido</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Panel de Control de Contenido</h1>
+
+    <div class="control-section">
+        <h2>Añadir Nuevo Elemento</h2>
+        <label for="item-url">URL del Contenido:</label>
+        <input type="url" id="item-url" placeholder="https://... o media/imagen.jpg" required>
+
+        <label for="item-type">Tipo:</label>
+        <select id="item-type">
+            <option value="image">Imagen</option>
+            <option value="video">Video</option>
+            <option value="webpage">Página Web</option>
+        </select>
+
+        <label for="item-duration">Duración (segundos, solo para Imagen/Web):</label>
+        <input type="number" id="item-duration" value="10" min="1">
+
+        <button id="add-item-btn">Añadir a la Lista</button>
+    </div>
+
+    <div class="control-section">
+        <h2>Lista de Reproducción Actual</h2>
+        <ul id="playlist-list">
+            <!-- La lista se generará aquí -->
+            <li>Cargando lista...</li>
+        </ul>
+        <p><em>Los cambios se guardan automáticamente al añadir, eliminar o reordenar.</em></p>
+    </div>
+
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // ---------------------------------------------------------------
+        // --- ¡¡¡ IMPORTANTE: CONFIGURACIÓN DE FIREBASE VA AQUÍ !!! ---
+        // ---------------------------------------------------------------
+         // Usa LA MISMA configuración que en index.html
+        const firebaseConfig = {
+  apiKey: "AIzaSyAir6pUHwf-vCJ7Tt8yDBpmw4n1jml7oE8",
+  authDomain: "visor-negocio.firebaseapp.com",
+  databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
+  projectId: "visor-negocio",
+  storageBucket: "visor-negocio.firebasestorage.app",
+  messagingSenderId: "113061044521",
+  appId: "1:113061044521:web:a397b454b03b27da041738"
+};
+        // ---------------------------------------------------------------
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const playlistRef = database.ref('playlist');
+
+        const itemUrlInput = document.getElementById('item-url');
+        const itemTypeSelect = document.getElementById('item-type');
+        const itemDurationInput = document.getElementById('item-duration');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const playlistListUl = document.getElementById('playlist-list');
+
+        let currentPlaylist = []; // Mantenemos una copia local
+
+        // Función para renderizar la lista en el HTML
+        function renderPlaylist() {
+            playlistListUl.innerHTML = ''; // Limpiar lista actual
+            if (currentPlaylist.length === 0) {
+                playlistListUl.innerHTML = '<li>La lista está vacía.</li>';
+                return;
+            }
+
+            currentPlaylist.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${index + 1}. [${item.type.toUpperCase()}] ${item.url} ${item.type !== 'video' ? '(' + item.duration + 's)' : ''}</span>
+                    <div>
+                        <button onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''}>Subir</button>
+                        <button onclick="moveItem(${index}, 1)" ${index === currentPlaylist.length - 1 ? 'disabled' : ''}>Bajar</button>
+                        <button onclick="deleteItem(${index})">Eliminar</button>
+                    </div>
+                `;
+                playlistListUl.appendChild(li);
+            });
+        }
+
+        // Función para guardar la playlist actual en Firebase
+        function savePlaylistToFirebase() {
+            playlistRef.set(currentPlaylist)
+                .then(() => console.log("Playlist guardada en Firebase."))
+                .catch(error => console.error("Error guardando playlist:", error));
+        }
+
+        // Añadir item
+        addItemBtn.addEventListener('click', () => {
+            const url = itemUrlInput.value.trim();
+            const type = itemTypeSelect.value;
+            const duration = parseInt(itemDurationInput.value) || 10; // Default 10s
+
+            if (!url) {
+                alert("Por favor, introduce una URL válida.");
+                return;
+            }
+
+            const newItem = { url, type, duration };
+
+            // Añadir al final de la copia local
+            currentPlaylist.push(newItem);
+
+            // Guardar en Firebase y re-renderizar (Firebase listener lo hará)
+            savePlaylistToFirebase();
+
+            // Limpiar formulario
+            itemUrlInput.value = '';
+            itemTypeSelect.value = 'image';
+            itemDurationInput.value = '10';
+        });
+
+        // Eliminar item
+        window.deleteItem = (index) => { // Hacerla global para que onclick la vea
+            if (confirm(`¿Seguro que quieres eliminar el elemento ${index + 1}?`)) {
+                currentPlaylist.splice(index, 1); // Eliminar de la copia local
+                savePlaylistToFirebase(); // Guardar cambios
+            }
+        }
+
+        // Mover item (subir/bajar)
+        window.moveItem = (index, direction) => { // Hacerla global
+             if (direction === -1 && index > 0) { // Mover arriba
+                [currentPlaylist[index], currentPlaylist[index - 1]] = [currentPlaylist[index - 1], currentPlaylist[index]];
+            } else if (direction === 1 && index < currentPlaylist.length - 1) { // Mover abajo
+                [currentPlaylist[index], currentPlaylist[index + 1]] = [currentPlaylist[index + 1], currentPlaylist[index]];
+            }
+            savePlaylistToFirebase(); // Guardar cambios
+        }
+
+
+        // Escuchar cambios en Firebase para mantener la UI actualizada
+        playlistRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            // Firebase devuelve un objeto si las claves son numéricas 0,1,2... convertir a array
+            currentPlaylist = data ? Object.values(data) : [];
+            console.log("Playlist cargada/actualizada desde Firebase:", currentPlaylist);
+            renderPlaylist(); // Re-dibujar la lista en el panel de control
+        }, (error) => {
+            console.error("Error leyendo la playlist de Firebase:", error);
+            playlistListUl.innerHTML = '<li>Error cargando la lista desde la base de datos.</li>';
+        });
+
+    </script>
+</body>
+</html>

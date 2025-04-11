@@ -2,21 +2,51 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor de Contenido Moderno 📺</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"> <!-- Añadido user-scalable=no -->
+    <title>Visor Negocio 📺</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Forzar pantalla completa y ocultar barras de scroll */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Evita barras de scroll en el body */
+            background-color: black; /* Fondo negro por si algo falla */
+        }
+        /* display-area ahora es el contenedor principal */
+        #display-area {
+            width: 100%;
+            height: 100%;
+            display: flex; /* Activa Flexbox */
+            justify-content: center; /* Centra contenido horizontalmente */
+            align-items: center; /* Centra contenido verticalmente */
+            overflow: hidden; /* Asegura que contenido no se desborde */
+            background-color: black; /* Fondo negro por defecto */
+        }
+        /* Ajustes para el contenido dentro del área */
+        #display-area img,
+        #display-area video {
+            display: block; /* Asegura que no haya espacio extra debajo */
+            max-width: 100%; /* No más ancho que el contenedor */
+            max-height: 100%; /* No más alto que el contenedor */
+            width: auto; /* Mantiene proporción original */
+            height: auto; /* Mantiene proporción original */
+            object-fit: contain; /* Escala manteniendo proporción, encajando dentro */
+        }
+        #display-area iframe,
+        #youtube-player-container { /* Contenedor para YT */
+            width: 100%;
+            height: 100%;
+            border: none; /* Sin borde */
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <aside id="sidebar">
-            <h2>Playlist ⏯️</h2>
-            <ul id="sidebar-playlist">
-                <li>Cargando lista...</li>
-            </ul>
-        </aside>
-        <main id="display-area">
-            <!-- El contenido se insertará aquí -->
-        </main>
+    <!-- Toda la pantalla es ahora el área de display -->
+    <div id="display-area">
+        <!-- El contenido (imagen, video, iframe) se insertará aquí dinámicamente -->
     </div>
 
     <!-- Carga asíncrona de la API de YouTube -->
@@ -35,13 +65,12 @@
           authDomain: "visor-negocio.firebaseapp.com",
           databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
           projectId: "visor-negocio",
-          storageBucket: "visor-negocio.appspot.com", // Corregido: suele ser .appspot.com
+          storageBucket: "visor-negocio.appspot.com",
           messagingSenderId: "113061044521",
           appId: "1:113061044521:web:a397b454b03b27da041738"
         };
         // ---------------------------------------------------------------
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const playlistRef = database.ref('playlist');
@@ -50,7 +79,6 @@
         let currentItemIndex = 0;
         let currentTimeoutId = null;
         const displayArea = document.getElementById('display-area');
-        const sidebarListUl = document.getElementById('sidebar-playlist'); // Referencia a la lista del sidebar
 
         let ytPlayer;
         let youtubeApiReady = false;
@@ -58,20 +86,17 @@
         function onYouTubeIframeAPIReady() {
             console.log("YouTube API Lista.");
             youtubeApiReady = true;
-            // No iniciar play aquí, esperar al flujo normal
         }
 
         function extractVideoID(url) {
              try {
                 const urlObj = new URL(url);
-                 // Simplificado para manejar varios formatos de YouTube
-                 let videoId = urlObj.searchParams.get('v'); // Estándar ?v=...
+                 let videoId = urlObj.searchParams.get('v');
                  if (!videoId && urlObj.hostname === 'youtu.be') {
-                    videoId = urlObj.pathname.slice(1); // Formato corto youtu.be/...
+                    videoId = urlObj.pathname.slice(1);
                  }
-                 if (videoId && videoId.length === 11) return videoId; // Validación básica de longitud
+                 if (videoId && videoId.length === 11) return videoId;
             } catch (e) { console.error("Error parseando URL YT:", url, e); }
-             // Fallback si solo es ID o algo raro
             if (typeof url === 'string' && url.length === 11 && !url.includes('/')) return url;
             return null;
         }
@@ -84,70 +109,20 @@
                 catch(e) { console.error("Error destruyendo YT:", e); }
                 ytPlayer = null;
             }
-            displayArea.innerHTML = '<div style="width:100%; height:100%; background:black;"></div>'; // Fondo negro por defecto
-        }
-
-        // --- Función para renderizar la playlist en el sidebar ---
-        function renderSidebarPlaylist() {
-            sidebarListUl.innerHTML = ''; // Limpiar
-            if (currentPlaylist.length === 0) {
-                sidebarListUl.innerHTML = '<li>Lista vacía...</li>';
-                return;
+            // Limpiar contenido anterior eficientemente
+            while (displayArea.firstChild) {
+                displayArea.removeChild(displayArea.firstChild);
             }
-            currentPlaylist.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.dataset.index = index; // Guardar índice para referencia
-                let emoji = '❓';
-                switch(item.type) {
-                    case 'image': emoji = '🖼️'; break;
-                    case 'video': emoji = '🎬'; break;
-                    case 'webpage': emoji = '🌐'; break;
-                    case 'youtube': emoji = '📹'; break; // Podría ser el de YouTube
-                }
-                let displayText = item.url;
-                 // Intentar mostrar algo más amigable que la URL
-                 try {
-                    const urlObj = new URL(item.url);
-                     if (item.type === 'youtube' && item.url.includes('yout')) {
-                         displayText = `YouTube Video`; // O extraer título si pudiéramos (más complejo)
-                     } else if(item.type === 'image' || item.type === 'video') {
-                        displayText = urlObj.pathname.split('/').pop() || item.url; // Intentar obtener nombre de archivo
-                     } else if(item.type === 'webpage') {
-                        displayText = urlObj.hostname; // Mostrar dominio
-                     }
-                 } catch (e) { /* Usar URL completa si falla */ }
-
-                 if (displayText.length > 25) { // Acortar si es muy largo
-                    displayText = displayText.substring(0, 22) + '...';
-                 }
-
-                li.innerHTML = `${emoji} ${displayText}`;
-                 li.title = item.url; // Tooltip con URL completa
-                sidebarListUl.appendChild(li);
-            });
+             // Asegurar fondo negro mientras carga el siguiente
+             displayArea.style.backgroundColor = 'black';
         }
-
-         // --- Función para marcar el item activo en el sidebar ---
-         function setActiveSidebarItem(index) {
-            const items = sidebarListUl.querySelectorAll('li');
-            items.forEach((li, i) => {
-                if (i === index) {
-                    li.classList.add('active');
-                    // Scroll para que sea visible si la lista es larga
-                    li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                } else {
-                    li.classList.remove('active');
-                }
-            });
-         }
-
 
         function playNextItem() {
             cleanupPreviousPlayer();
 
             if (!currentPlaylist || currentPlaylist.length === 0) {
-                console.log("Playlist vacía.");
-                sidebarListUl.innerHTML = '<li>Esperando contenido...</li>';
+                console.log("Playlist vacía. Esperando...");
+                 displayArea.innerHTML = '<p style="color: white; font-size: 1.5em;">Esperando contenido...</p>'; // Mensaje más visible
                 currentTimeoutId = setTimeout(playNextItem, 5000);
                 return;
             }
@@ -156,18 +131,16 @@
                 currentItemIndex = 0; // Loop
             }
 
-            setActiveSidebarItem(currentItemIndex); // Marcar activo en sidebar
             const item = currentPlaylist[currentItemIndex];
             console.log(`Mostrando item ${currentItemIndex}: ${item.url} (Tipo: ${item.type})`);
 
-            let advanceIndex = true; // Por defecto, avanzamos índice para el siguiente
+            let advanceIndex = true;
 
             switch (item.type) {
                 case 'image':
                     const img = document.createElement('img');
                     img.src = item.url;
-                    img.onerror = () => { console.error("Error img:", item.url); playNextItem(); }; // Avanza al siguiente en error
-                    displayArea.innerHTML = ''; // Limpiar antes de añadir
+                    img.onerror = () => { console.error("Error img:", item.url); playNextItem(); };
                     displayArea.appendChild(img);
                     currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
                     break;
@@ -176,22 +149,19 @@
                     const video = document.createElement('video');
                     video.src = item.url;
                     video.autoplay = true;
-                    video.muted = false; // Intentar con sonido (puede fallar autoplay)
+                    video.muted = false; // Intentar con sonido
                     video.controls = false;
                     video.onerror = () => { console.error("Error video:", item.url); playNextItem(); };
                     video.addEventListener('ended', playNextItem);
-                     video.addEventListener('error', playNextItem); // Tambien avanzar si hay error en play
-                    displayArea.innerHTML = '';
+                    video.addEventListener('error', playNextItem);
                     displayArea.appendChild(video);
-                    advanceIndex = false; // El evento 'ended' se encarga de avanzar
+                    advanceIndex = false;
                     break;
 
                 case 'webpage':
                     const iframe = document.createElement('iframe');
                     iframe.src = item.url;
-                    // Ojo: X-Frame-Options puede impedir mostrar muchas webs
-                    iframe.onerror = () => { console.warn("Error iframe:", item.url); };
-                    displayArea.innerHTML = '';
+                    iframe.onerror = () => { console.warn("Error iframe (puede ser X-Frame-Options):", item.url); };
                     displayArea.appendChild(iframe);
                     currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
                     break;
@@ -200,92 +170,91 @@
                     const videoId = extractVideoID(item.url);
                     if (!videoId) {
                         console.error("No se pudo obtener Video ID de:", item.url);
-                        setTimeout(playNextItem, 100); break; // Avanzar
+                        setTimeout(playNextItem, 100); break;
                     }
                     if (!youtubeApiReady) {
                         console.warn("API YouTube no lista, reintentando...");
-                        setActiveSidebarItem(-1); // Desmarcar activo mientras espera
-                        currentTimeoutId = setTimeout(playNextItem, 1000); // Reintentar este mismo item
-                        advanceIndex = false; // No avanzar índice todavía
+                        currentTimeoutId = setTimeout(playNextItem, 1000);
+                        advanceIndex = false;
                         break;
                     }
-                    const ytDiv = document.createElement('div');
-                    ytDiv.id = 'youtube-player-container';
-                    displayArea.innerHTML = '';
-                    displayArea.appendChild(ytDiv);
+                    // Crear DIV contenedor para YT explícitamente
+                    const ytContainer = document.createElement('div');
+                    ytContainer.id = 'youtube-player-container';
+                    displayArea.appendChild(ytContainer);
+
                     ytPlayer = new YT.Player('youtube-player-container', {
                         height: '100%', width: '100%', videoId: videoId,
                         playerVars: {
                             'autoplay': 1, 'controls': 0, 'showinfo': 0, 'rel': 0,
                             'modestbranding': 1, 'loop': 0, 'fs': 0, 'cc_load_policy': 0,
-                            'iv_load_policy': 3, 'autohide': 0,
-                            'mute': 0 // <--- INTENTANDO CON SONIDO (puede fallar autoplay)
+                            'iv_load_policy': 3, 'autohide': 0, 'mute': 0 // Con Sonido
                         },
                         events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
                     });
-                    advanceIndex = false; // El evento state change (ended) avanzará
+                    advanceIndex = false;
                     break;
 
                 default:
                     console.warn("Tipo desconocido:", item.type);
-                    setTimeout(playNextItem, 100); // Avanzar rápido
+                    setTimeout(playNextItem, 100);
                     break;
             }
 
             if(advanceIndex) {
-                currentItemIndex++; // Incrementar para la próxima llamada (solo si no es video/YT)
+                currentItemIndex++;
             }
         }
 
         function onPlayerReady(event) {
             console.log("YT Player listo:", event.target.getVideoData().title);
-            // No necesitamos playVideo() si autoplay=1, pero sí necesitamos asegurar el mute state
-             // event.target.mute(); // Si quisiéramos forzar mute
-            // event.target.unMute(); // Si quisiéramos intentar activar sonido (con riesgo)
-             event.target.playVideo(); // Llamarlo explícitamente puede ayudar en algunos casos
+            event.target.playVideo(); // Asegurar inicio
         }
 
         function onPlayerStateChange(event) {
-            // Estado -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
             if (event.data == YT.PlayerState.ENDED) {
                 console.log("Video YT finalizado.");
                 currentItemIndex++;
                 playNextItem();
             }
-             // Podríamos detectar si falla el play automático por sonido aquí?
-             if (event.data == YT.PlayerState.UNSTARTED && event.target.getPlayerState() == YT.PlayerState.UNSTARTED) {
-                console.warn("Video YT parece no haber iniciado automáticamente (¿problema de autoplay con sonido?).")
-                // Podríamos intentar silenciarlo aquí y darle play de nuevo?
-                // event.target.mute(); event.target.playVideo();
-                // O simplemente avanzar? Por ahora, solo avisamos.
-             }
+            if (event.data == YT.PlayerState.PLAYING) {
+                // Opcional: verificar si realmente tiene sonido
+                // console.log("YT está sonando:", !event.target.isMuted());
+            }
         }
 
         function onPlayerError(event) {
             console.error("Error en YT player:", event.data, "para item:", currentPlaylist[currentItemIndex]?.url);
             currentItemIndex++;
-            playNextItem(); // Saltar al siguiente
+            playNextItem();
         }
 
         playlistRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            currentPlaylist = data ? Object.values(data) : [];
-            console.log("Playlist actualizada:", currentPlaylist);
-            renderSidebarPlaylist(); // Actualizar sidebar
-            currentItemIndex = 0; // Reiniciar al recibir nueva lista
-            if (document.readyState === 'complete') { // Solo iniciar si la pág ya cargó
-                 playNextItem();
+            const newPlaylist = data ? Object.values(data) : [];
+            // Comprobar si la playlist realmente cambió para evitar reinicios innecesarios
+            if (JSON.stringify(newPlaylist) !== JSON.stringify(currentPlaylist)) {
+                console.log("Playlist actualizada desde Firebase:", newPlaylist);
+                currentPlaylist = newPlaylist;
+                currentItemIndex = 0; // Reiniciar índice solo si la lista cambió
+                 // Cancelar cualquier timeout pendiente antes de reiniciar
+                if (currentTimeoutId) clearTimeout(currentTimeoutId);
+                currentTimeoutId = null;
+                // Detener video o YT si estaba en curso antes de cambiar
+                cleanupPreviousPlayer();
+                // Empezar la nueva lista
+                playNextItem();
             } else {
-                 window.addEventListener('load', playNextItem, { once: true }); // Esperar a que todo cargue
+                console.log("Playlist sin cambios detectados.");
             }
+
         }, (error) => {
             console.error("Error leyendo Firebase:", error);
-            displayArea.innerHTML = '<p style="color: red;">Error conectando a DB.</p>';
-             sidebarListUl.innerHTML = '<li>Error DB</li>';
+            displayArea.innerHTML = '<p style="color: red; font-size: 1.5em;">Error conectando a la Base de Datos.</p>';
         });
 
-         // Iniciar la reproducción cuando la ventana esté cargada
-         // window.addEventListener('load', playNextItem, { once: true }); // Movido dentro del listener de Firebase
+        // No iniciar play aquí, el listener de Firebase lo hará cuando lleguen los datos
+        console.log("Visor inicializado. Esperando datos de Firebase...");
 
     </script>
 </body>

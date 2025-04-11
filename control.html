@@ -6,7 +6,7 @@
     <title>Panel de Control ⚙️</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="control-page"> <!-- Añadida clase para estilos específicos -->
     <h1>Panel de Control de Contenido</h1>
 
     <div class="control-section">
@@ -30,12 +30,12 @@
 
     <div class="control-section">
         <h2>Lista de Reproducción Actual 📋</h2>
+        <!-- La lista UL tendrá ahora scroll si es necesario -->
         <ul id="playlist-list">
-            <!-- La lista se generará aquí -->
             <li>Cargando lista...</li>
         </ul>
         <p><em>Los cambios se guardan y reflejan en la TV automáticamente.</em></p>
-         <p><small>⚠️ Mover/Eliminar requiere recarga manual en la TV si ya empezó.</small></p>
+        <p><small>⚠️ Mover/Eliminar podría requerir recarga en la TV si ya empezó a mostrarse.</small></p>
     </div>
 
     <!-- SDK de Firebase -->
@@ -51,15 +51,14 @@
           authDomain: "visor-negocio.firebaseapp.com",
           databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
           projectId: "visor-negocio",
-          storageBucket: "visor-negocio.appspot.com", // Corregido
+          storageBucket: "visor-negocio.appspot.com",
           messagingSenderId: "113061044521",
           appId: "1:113061044521:web:a397b454b03b27da041738"
         };
         // ---------------------------------------------------------------
 
-        // El resto del Javascript de control.html es el mismo de la versión anterior
-        // (con toggleDurationInput, renderPlaylist, savePlaylistToFirebase, etc.)
-        // Inicializar Firebase
+        // El Javascript aquí es el mismo que en la respuesta anterior
+        // (Inicialización de Firebase, listeners, funciones add/delete/move, etc.)
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const playlistRef = database.ref('playlist');
@@ -119,13 +118,11 @@
         }
 
         function savePlaylistToFirebase() {
-             // Asegurar que solo guardamos datos relevantes y correctos
             const playlistToSave = currentPlaylist.map(item => {
                 const cleanItem = { url: item.url, type: item.type };
                 if (item.type === 'image' || item.type === 'webpage') {
                     cleanItem.duration = parseInt(item.duration) || 10;
                 }
-                // No guardamos duración para video/youtube
                 return cleanItem;
             });
              console.log("Guardando en Firebase:", playlistToSave);
@@ -136,40 +133,37 @@
 
         addItemBtn.addEventListener('click', () => {
             const url = itemUrlInput.value.trim();
-            let type = itemTypeSelect.value; // Cambiado a let
+            let type = itemTypeSelect.value;
             const duration = parseInt(itemDurationInput.value) || 10;
 
             if (!url) { alert("Por favor, introduce una URL válida."); return; }
 
-             // Auto-detectar YouTube si es posible
             if (url.includes('youtube.com/watch?') || url.includes('youtu.be/')) {
                  if (type !== 'youtube') {
                      console.log("URL detectada como YouTube, cambiando tipo...");
                      type = 'youtube';
-                     itemTypeSelect.value = 'youtube'; // Actualizar el select visualmente
-                     toggleDurationInput(); // Ocultar duración si cambia a YT
+                     itemTypeSelect.value = 'youtube';
+                     toggleDurationInput();
                  }
             }
 
-            if (type === 'youtube' && !extractVideoID(url)) { // Usar función de index para validar mejor
+            if (type === 'youtube' && !extractVideoID(url)) {
                  alert("URL de YouTube inválida o ID no extraíble.");
                  return;
              }
 
-            const newItem = { url, type, duration }; // Guardar siempre, se filtra en save
+            const newItem = { url, type, duration };
 
             currentPlaylist.push(newItem);
             savePlaylistToFirebase();
 
             itemUrlInput.value = '';
-            itemTypeSelect.value = 'image'; // Reset a imagen por defecto
+            itemTypeSelect.value = 'image';
             itemDurationInput.value = '10';
             toggleDurationInput();
         });
 
-         // Función global para extraer ID (copiada de index.html por si acaso)
-         // Aunque no se usa directamente aquí, es buena práctica tenerla si validamos
-         window.extractVideoID = function(url) {
+         window.extractVideoID = function(url) { // Copia local de la función
              try {
                 const urlObj = new URL(url);
                  let videoId = urlObj.searchParams.get('v');
@@ -182,7 +176,6 @@
             return null;
         }
 
-
         window.deleteItem = (index) => {
             if (confirm(`¿Seguro que quieres eliminar el elemento ${index + 1}?\n${currentPlaylist[index].url}`)) {
                 currentPlaylist.splice(index, 1);
@@ -191,13 +184,15 @@
         }
 
         window.moveItem = (index, direction) => {
+             let changed = false;
              if (direction === -1 && index > 0) {
                 [currentPlaylist[index], currentPlaylist[index - 1]] = [currentPlaylist[index - 1], currentPlaylist[index]];
+                changed = true;
             } else if (direction === 1 && index < currentPlaylist.length - 1) {
                 [currentPlaylist[index], currentPlaylist[index + 1]] = [currentPlaylist[index + 1], currentPlaylist[index]];
+                changed = true;
             }
-             // Solo guardar si hubo cambio
-             if ((direction === -1 && index > 0) || (direction === 1 && index < currentPlaylist.length - 1)) {
+             if (changed) {
                 savePlaylistToFirebase();
              }
         }

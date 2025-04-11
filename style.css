@@ -4,7 +4,6 @@ body {
     margin: 0;
     padding: 0;
     color: #333;
-    /* background-color se define específico para cada 'página' */
 }
 
 h1, h2 {
@@ -13,26 +12,27 @@ h1, h2 {
 }
 
 /* --- Estilos para index.html (Visor Fullscreen) --- */
-/* (Los estilos principales están ahora inline en index.html para asegurar fullscreen) */
-/* Podemos dejar aquí estilos generales para el contenido si se necesitaran */
+/* (Los estilos principales están inline en index.html) */
 
 
 /* --- Estilos para control.html (Panel de Control) --- */
 body.control-page {
-     background-color: #f0f2f5; /* Fondo grisáceo para el panel */
-     padding: 20px; /* Espacio alrededor */
-     height: auto; /* Permitir que crezca con el contenido */
-     overflow-y: auto; /* Scroll si es muy alto */
+     background-color: #f0f2f5;
+     padding: 20px;
+     height: auto; /* Altura automática basada en contenido */
+     overflow-y: auto; /* PERMITE EL SCROLL DE LA PÁGINA ENTERA si es necesario */
+     min-height: 100vh; /* Asegura que ocupa al menos la altura de la ventana */
+     box-sizing: border-box; /* Considerar padding en altura */
 }
 
 .control-section {
     background-color: #fff;
-    padding: 20px 25px; /* Más padding lateral */
+    padding: 20px 25px;
     margin: 20px auto;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
     width: 90%;
-    max-width: 750px; /* Un poco más ancho */
+    max-width: 750px;
     box-sizing: border-box;
 }
 
@@ -74,31 +74,30 @@ button:disabled {
     background-color: #e4e6eb; color: #bcc0c4; cursor: not-allowed;
 }
 
-/* --- Lista de Reproducción con Scroll --- */
+/* --- Lista de Reproducción (AHORA SIN SCROLL PROPIO) --- */
 #playlist-list {
     list-style: none;
-    padding: 0;
+    padding: 0; /* Quitado padding interior que pusimos antes para el scroll */
     margin-top: 15px;
-    max-height: 50vh; /* Altura máxima: 50% de la altura de la ventana */
-    /* Alternativa: max-height: 400px; */
-    overflow-y: auto; /* Muestra scrollbar vertical SI es necesario */
-    border: 1px solid #dddfe2; /* Borde ligero alrededor de la lista */
-    border-radius: 6px; /* Bordes redondeados */
-    padding: 10px; /* Espacio interior */
-    background-color: #f9f9f9; /* Fondo ligeramente distinto */
+    /* REMOVIDO: max-height: 50vh; */
+    /* REMOVIDO: overflow-y: auto; */
+    /* REMOVIDO: border: 1px solid #dddfe2; */ /* Quitamos borde contenedor si no hay scroll interno */
+    /* REMOVIDO: padding: 10px; */
+    /* REMOVIDO: background-color: #f9f9f9; */ /* Sin fondo contenedor si no hay scroll */
 }
 
+/* Estilos para cada item de la lista (se mantienen) */
 #playlist-list li {
-    background-color: #ffffff; /* Fondo blanco para items */
-    margin-bottom: 8px; /* Espacio entre items */
+    background-color: #ffffff;
+    margin-bottom: 8px;
     padding: 10px 15px;
     border-radius: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    border: 1px solid #e4e6eb; /* Borde sutil para cada item */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Sombra muy ligera */
+    border: 1px solid #e4e6eb;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 #playlist-list li span {

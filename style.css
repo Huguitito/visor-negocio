@@ -12,17 +12,17 @@ h1, h2 {
 }
 
 /* --- Estilos para index.html (Visor Fullscreen) --- */
-/* (Los estilos principales están inline en index.html) */
+/* (La mayoría de los estilos críticos están ahora inline en index.html) */
 
 
 /* --- Estilos para control.html (Panel de Control) --- */
 body.control-page {
      background-color: #f0f2f5;
      padding: 20px;
-     height: auto; /* Altura automática basada en contenido */
-     overflow-y: auto; /* PERMITE EL SCROLL DE LA PÁGINA ENTERA si es necesario */
-     min-height: 100vh; /* Asegura que ocupa al menos la altura de la ventana */
-     box-sizing: border-box; /* Considerar padding en altura */
+     height: auto;
+     overflow-y: auto;
+     min-height: 100vh;
+     box-sizing: border-box;
 }
 
 .control-section {
@@ -74,19 +74,13 @@ button:disabled {
     background-color: #e4e6eb; color: #bcc0c4; cursor: not-allowed;
 }
 
-/* --- Lista de Reproducción (AHORA SIN SCROLL PROPIO) --- */
+/* Lista de Reproducción (sin scroll propio, usa el de la página) */
 #playlist-list {
     list-style: none;
-    padding: 0; /* Quitado padding interior que pusimos antes para el scroll */
+    padding: 0;
     margin-top: 15px;
-    /* REMOVIDO: max-height: 50vh; */
-    /* REMOVIDO: overflow-y: auto; */
-    /* REMOVIDO: border: 1px solid #dddfe2; */ /* Quitamos borde contenedor si no hay scroll interno */
-    /* REMOVIDO: padding: 10px; */
-    /* REMOVIDO: background-color: #f9f9f9; */ /* Sin fondo contenedor si no hay scroll */
 }
 
-/* Estilos para cada item de la lista (se mantienen) */
 #playlist-list li {
     background-color: #ffffff;
     margin-bottom: 8px;

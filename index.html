@@ -146,7 +146,7 @@
                         const video = document.createElement('video');
                         video.src = item.url;
                         video.autoplay = true;
-                        video.muted = true; // Autoplay más fiable silenciado
+                        video.muted = false; // Autoplay más fiable silenciado
                         video.controls = false;
                         video.onerror = () => { console.error("Error video:", item.url); currentItemIndex++; playNextItem(); }; // Saltar si falla
                         video.addEventListener('ended', () => { currentItemIndex++; playNextItem(); }); // Avanzar al terminar

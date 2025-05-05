@@ -4,20 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control 🔒 Admin</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> <!-- Asegúrate que style.css esté en la misma carpeta -->
 </head>
 <body class="control-page">
 
     <h1>Panel de Control de Contenido</h1>
 
-    <!-- Sección de Login -->
+    <!-- Sección de Login (Inicialmente visible) -->
     <div id="login-section" class="control-section">
-       <!-- ... (contenido del login sin cambios) ... -->
+        <h2>Iniciar Sesión (Admin)</h2>
+        <label for="admin-email">Correo Electrónico:</label>
+        <input type="email" id="admin-email" required>
+
+        <label for="admin-password">Contraseña:</label>
+        <input type="password" id="admin-password" required>
+
+        <button id="login-btn">🔑 Iniciar Sesión</button>
+        <p id="login-error" class="error-message" style="display: none;"></p>
     </div>
 
-    <!-- Sección de Controles -->
+    <!-- Sección de Controles (Oculta hasta login de ADMIN correcto) -->
     <div id="controls-section" style="display: none;">
-        <!-- ... (contenido de los controles sin cambios) ... -->
+        <div class="control-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                 <span id="admin-status"></span>
+                 <!-- El ID del botón debe coincidir con getElementById -->
+                 <button id="logout-btn">🚪 Cerrar Sesión</button>
+            </div>
+            <h2>Añadir Nuevo Elemento ✨</h2>
+            <label for="item-url">URL del Contenido (Imagen, Video MP4, Web, YouTube):</label>
+            <input type="url" id="item-url" placeholder="https://... o https://www.youtube.com/watch?v=..." required>
+
+            <label for="item-type">Tipo:</label>
+            <select id="item-type">
+                <option value="image">🖼️ Imagen</option>
+                <option value="video">🎬 Video (MP4 directo)</option>
+                <option value="webpage">🌐 Página Web</option>
+                <option value="youtube">📹 YouTube Video</option>
+            </select>
+
+            <label for="item-duration" id="duration-label">Duración (segundos, solo para Imagen/Web):</label>
+            <input type="number" id="item-duration" value="10" min="1">
+
+            <button id="add-item-btn">➕ Añadir a la Lista</button>
+        </div>
+
         <div class="control-section">
             <h2>Lista de Reproducción Actual 📋</h2>
             <ul id="playlist-list">
@@ -27,107 +58,243 @@
         </div>
     </div>
 
-    <!-- SDKs Firebase -->
+    <!-- SDKs Firebase (app, database, auth) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <script>
-        // --- CONFIGURACIÓN FIREBASE ---
-        const firebaseConfig = { /* ... tus credenciales ... */ };
-        // --- UID del Administrador ---
+        // --- CONFIGURACIÓN FIREBASE (CORREGIDA) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyAir6pUHwf-vCJ7Tt8yDBpmw4n1jml7oE8",
+          authDomain: "visor-negocio.firebaseapp.com",
+          // databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com", // <-- COMENTADO
+          projectId: "visor-negocio", // <-- VERIFICAR EXACTITUD
+          storageBucket: "visor-negocio.appspot.com", // <-- VERIFICAR EXACTITUD
+          messagingSenderId: "113061044521",
+          appId: "1:113061044521:web:a397b454b03b27da041738"
+        };
+        // --------------------------------------------------
+        // --- UID Admin ---
         const ADMIN_UID = "eRKsZnCe0TXZ4JagmcVAik7IX8T2";
-        // -----------------------------
+        // -----------------
 
-        firebase.initializeApp(firebaseConfig);
+        // --- INICIALIZACIÓN Y LÓGICA DEL PANEL DE CONTROL ---
+        try {
+             firebase.initializeApp(firebaseConfig);
+             console.log("Firebase inicializado correctamente en control.html.");
+        } catch (e) {
+             console.error("!!! ERROR GRAVE: Falló firebase.initializeApp() en control.html !!!", e);
+             const loginErrorEl = document.getElementById('login-error');
+             if(loginErrorEl) { loginErrorEl.textContent = "Error Crítico: No se pudo inicializar Firebase."; loginErrorEl.style.display = 'block'; }
+             throw new Error("Firebase Init Failed");
+        }
+
         const database = firebase.database();
         const auth = firebase.auth();
         const playlistRef = database.ref('playlist');
 
-        // Referencias DOM
+        // ----- REFERENCIAS A ELEMENTOS DEL DOM -----
+        // Es crucial que todas estén aquí antes de usarlas
         const loginSection = document.getElementById('login-section');
         const controlsSection = document.getElementById('controls-section');
-        // ... (resto de refs DOM) ...
+        const adminEmailInput = document.getElementById('admin-email');
+        const adminPasswordInput = document.getElementById('admin-password');
+        const loginBtn = document.getElementById('login-btn');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn'); // <<<--- LÍNEA VERIFICADA Y PRESENTE
+        const adminStatus = document.getElementById('admin-status');
+        const itemUrlInput = document.getElementById('item-url');
+        const itemTypeSelect = document.getElementById('item-type');
+        const itemDurationInput = document.getElementById('item-duration');
+        const durationLabel = document.getElementById('duration-label');
+        const addItemBtn = document.getElementById('add-item-btn');
         const playlistListUl = document.getElementById('playlist-list');
+        // -------------------------------------------
 
         let currentPlaylist = [];
         let dbListenerActive = false;
 
-        // --- Funciones Auth (Login/Logout sin cambios) ---
-        // ...
+        // --- Funciones de Autenticación ---
 
-        // --- Observador de Auth con VERIFICACIÓN DE UID ---
+        // Listener para el botón de Login
+        loginBtn.addEventListener('click', () => {
+             const email = adminEmailInput.value;
+             const password = adminPasswordInput.value;
+             loginError.style.display = 'none';
+             if (!email || !password) {
+                 loginError.textContent = 'Por favor, introduce email y contraseña.';
+                 loginError.style.display = 'block';
+                 return;
+             }
+             auth.signInWithEmailAndPassword(email, password)
+                 .then((userCredential) => { console.log("Login OK:", userCredential.user.email); adminPasswordInput.value = ''; })
+                 .catch((error) => { console.error("Login Error:", error); loginError.textContent = `Error: ${error.message}`; loginError.style.display = 'block'; });
+        });
+
+        // Listener para el botón de Logout (Esta es la línea que daba error si logoutBtn no estaba definido antes)
+        logoutBtn.addEventListener('click', () => {
+             auth.signOut().then(() => { console.log("Logout OK."); })
+                 .catch((error) => { console.error("Logout Error:", error); alert("Error al cerrar sesión."); });
+        });
+
+        // Observador del estado de autenticación con verificación de UID
         auth.onAuthStateChanged(user => {
-            console.log("Auth state changed. User:", user ? user.email : 'No user'); // <-- AÑADIR LOG
-
+            console.log("Auth state changed. User:", user ? user.email : 'No user');
             if (user && user.uid === ADMIN_UID) {
-                console.log("ADMINISTRADOR CORRECTO autenticado. UID:", user.uid); // <-- AÑADIR LOG
+                // Es el Administrador correcto
+                console.log("Administrador autenticado:", user.email);
                 loginSection.style.display = 'none';
                 controlsSection.style.display = 'block';
-                // ... (actualizar UI) ...
+                adminStatus.textContent = `Admin: ${user.email}`;
+                loginError.style.display = 'none';
 
                 if (!dbListenerActive) {
-                    console.log("Intentando activar listener de DB..."); // <-- AÑADIR LOG
+                    console.log("Activando listener de DB...");
                     activateDbRead();
                     dbListenerActive = true;
-                } else {
-                    console.log("Listener de DB ya estaba activo."); // <-- AÑADIR LOG
                 }
             } else {
-                console.log("Usuario NO es admin o no está logueado."); // <-- AÑADIR LOG
-                 if (user) {
-                     console.warn("Usuario logueado NO es admin:", user.uid, "!===", ADMIN_UID); // <-- AÑADIR LOG
-                     // ... (manejar usuario no admin logueado, forzar logout) ...
-                 }
-                 // ... (ocultar controles, mostrar login) ...
+                // No está logueado O no es el administrador correcto
+                console.log("Acceso denegado o no autenticado.");
+                loginSection.style.display = 'block';
+                controlsSection.style.display = 'none';
+                adminStatus.textContent = '';
+                playlistListUl.innerHTML = '<li>Inicia sesión como administrador para ver/editar...</li>';
+                currentPlaylist = [];
+
+                if (user) {
+                    // Usuario logueado pero NO admin
+                    loginError.textContent = 'Error: Usuario no autorizado para administrar.';
+                    loginError.style.display = 'block';
+                    console.warn("Usuario logueado no es admin (UID:", user.uid, "). Cerrando sesión.");
+                    auth.signOut();
+                } else {
+                     loginError.style.display = 'none';
+                }
 
                 if (dbListenerActive) {
-                    console.log("Desactivando listener de DB..."); // <-- AÑADIR LOG
+                    console.log("Desactivando listener de DB...");
                     playlistRef.off('value');
                     dbListenerActive = false;
                 }
-                 playlistListUl.innerHTML = '<li>Inicia sesión como administrador para ver/editar...</li>'; // Limpiar lista explícitamente
-                 currentPlaylist = [];
             }
         });
 
-        // --- Funciones Playlist ---
+
+        // --- Funciones de la Playlist ---
+
+        function toggleDurationInput() {
+             const selectedType = itemTypeSelect.value;
+             if (selectedType === 'video' || selectedType === 'youtube') {
+                 itemDurationInput.style.display = 'none'; durationLabel.style.display = 'none';
+             } else {
+                 itemDurationInput.style.display = 'block'; durationLabel.style.display = 'block';
+             }
+         }
+        itemTypeSelect.addEventListener('change', toggleDurationInput);
+        toggleDurationInput();
+
         function renderPlaylist() {
-            console.log("Intentando renderizar playlist. Datos actuales:", currentPlaylist); // <-- AÑADIR LOG
+            console.log("Intentando renderizar playlist. Datos actuales:", currentPlaylist);
             playlistListUl.innerHTML = '';
             if (currentPlaylist.length === 0) {
-                console.log("Renderizando: Lista vacía."); // <-- AÑADIR LOG
                 playlistListUl.innerHTML = '<li>La lista está vacía. ¡Añade algo!</li>';
                 return;
             }
             currentPlaylist.forEach((item, index) => {
-                 console.log("Renderizando item:", index, item); // <-- AÑADIR LOG
-                 // ... (código para crear el li) ...
+                 const li = document.createElement('li');
+                 let durationText = '';
+                 if (item.type !== 'video' && item.type !== 'youtube') { durationText = ` (${item.duration}s)`; }
+                 let displayUrl = item.url;
+                 if (displayUrl.length > 50) displayUrl = displayUrl.substring(0, 47) + '...';
+                 let emoji = item.type === 'image' ? '🖼️' : item.type === 'video' ? '🎬' : item.type === 'webpage' ? '🌐' : item.type === 'youtube' ? '📹' : '❓';
+                 li.innerHTML = `
+                    <span>${emoji} [${item.type.toUpperCase()}] ${displayUrl}${durationText}</span>
+                    <div>
+                        <button onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Mover Arriba">🔼</button>
+                        <button onclick="moveItem(${index}, 1)" ${index === currentPlaylist.length - 1 ? 'disabled' : ''} title="Mover Abajo">🔽</button>
+                        <button onclick="deleteItem(${index})" title="Eliminar">❌</button>
+                    </div>
+                `;
+                 li.querySelector('span').title = item.url;
                  playlistListUl.appendChild(li);
             });
         }
 
-        // ... (resto de funciones: save, add, delete, move, extractVideoID, toggleDuration) ...
+        function savePlaylistToFirebase() {
+            if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+                 console.error("Intento de guardar por usuario no admin!"); return;
+            }
+            const playlistToSave = currentPlaylist.map(item => {
+                const cleanItem = { url: item.url, type: item.type };
+                if (item.type === 'image' || item.type === 'webpage') { cleanItem.duration = parseInt(item.duration) || 10; }
+                return cleanItem;
+            });
+            console.log("Guardando en Firebase:", playlistToSave);
+            playlistRef.set(playlistToSave)
+                .then(() => console.log("Playlist guardada en Firebase."))
+                .catch(error => { console.error("Error guardando playlist:", error); alert(`Error al guardar: ${error.message}`); });
+        }
+
+        addItemBtn.addEventListener('click', () => {
+            const url = itemUrlInput.value.trim();
+            let type = itemTypeSelect.value;
+            const duration = parseInt(itemDurationInput.value) || 10;
+            if (!url) { alert("URL inválida."); return; }
+            if (url.includes('youtube.com/watch?') || url.includes('youtu.be/')) {
+                 if (type !== 'youtube') { type = 'youtube'; itemTypeSelect.value = 'youtube'; toggleDurationInput(); }
+            }
+            if (type === 'youtube' && !extractVideoID(url)) { alert("URL de YouTube inválida."); return; }
+            const newItem = { url, type, duration };
+            currentPlaylist.push(newItem);
+            savePlaylistToFirebase();
+            itemUrlInput.value = ''; itemTypeSelect.value = 'image'; itemDurationInput.value = '10'; toggleDurationInput();
+        });
+
+        window.deleteItem = (index) => {
+             if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { alert("No autorizado."); return; }
+             if (confirm(`¿Eliminar elemento ${index + 1}?\n${currentPlaylist[index].url}`)) {
+                currentPlaylist.splice(index, 1);
+                savePlaylistToFirebase();
+             }
+        }
+        window.moveItem = (index, direction) => {
+            if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { alert("No autorizado."); return; }
+            let changed = false;
+             if (direction === -1 && index > 0) { [currentPlaylist[index], currentPlaylist[index - 1]] = [currentPlaylist[index - 1], currentPlaylist[index]]; changed = true; }
+             else if (direction === 1 && index < currentPlaylist.length - 1) { [currentPlaylist[index], currentPlaylist[index + 1]] = [currentPlaylist[index + 1], currentPlaylist[index]]; changed = true; }
+             if (changed) savePlaylistToFirebase();
+        }
+
+        window.extractVideoID = function(url) {
+             try {
+                const urlObj = new URL(url);
+                 let videoId = urlObj.searchParams.get('v');
+                 if (!videoId && urlObj.hostname === 'youtu.be') videoId = urlObj.pathname.slice(1);
+                 if (videoId && videoId.length === 11) return videoId;
+            } catch (e) {}
+            if (typeof url === 'string' && url.length === 11 && !url.includes('/')) return url;
+            return null;
+        }
 
         // --- Listener de Base de Datos ---
         function activateDbRead() {
-             console.log(">>> Dentro de activateDbRead: Adjuntando listener a 'playlist'..."); // <-- AÑADIR LOG
-             playlistRef.on('value', (snapshot) => {
-                console.log(">>> Listener DB: Datos recibidos de Firebase!"); // <-- AÑADIR LOG
+            console.log(">>> control.html: Adjuntando listener DB...");
+            playlistRef.on('value', (snapshot) => {
+                console.log(">>> control.html: Datos recibidos!");
                 const data = snapshot.val();
-                console.log(">>> Listener DB: snapshot.val():", data); // <-- AÑADIR LOG
+                console.log(">>> control.html: snapshot.val():", data); // Log para ver datos crudos
                 currentPlaylist = data ? Object.values(data) : [];
-                console.log(">>> Listener DB: currentPlaylist procesada:", currentPlaylist); // <-- AÑADIR LOG
-                renderPlaylist(); // Renderizar la lista con los datos recibidos
+                console.log(">>> control.html: currentPlaylist procesada:", currentPlaylist); // Log para ver array procesado
+                renderPlaylist();
             }, (error) => {
-                // ¡Este bloque es IMPORTANTE si hay error de lectura!
-                console.error(">>> !!! ERROR en listener de DB:", error.code, error.message); // <-- AÑADIR LOG MÁS DETALLADO
-                playlistListUl.innerHTML = `<li>ERROR AL LEER DATOS: ${error.message} (Código: ${error.code})</li>`;
-                // Podríamos intentar desactivar el listener aquí si falla repetidamente
-                // playlistRef.off('value');
-                // dbListenerActive = false;
+                console.error(">>> !!! control.html: ERROR en listener de DB:", error.code, error.message);
+                playlistListUl.innerHTML = `<li>ERROR LEYENDO DATOS: ${error.message}</li>`;
             });
         }
+
+        console.log("Panel de control (control.html) inicializado.");
 
     </script>
 </body>

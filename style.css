@@ -4,115 +4,213 @@ body {
     margin: 0;
     padding: 0;
     color: #333;
+    /* background-color se define específico abajo si es necesario */
 }
 
 h1, h2 {
-    color: #1c1e21;
+    color: #1c1e21; /* Azul oscuro tipo Facebook/Meta */
     text-align: center;
+    margin-top: 0.5em; /* Espacio superior reducido */
+    margin-bottom: 1em;
 }
 
 /* --- Estilos para index.html (Visor Fullscreen) --- */
-/* (La mayoría de los estilos críticos están ahora inline en index.html) */
+/* La mayoría de los estilos críticos (fullscreen, centrado, transición)
+   están ahora definidos inline en index.html para mayor seguridad.
+   Aquí podemos poner estilos generales si fueran necesarios,
+   pero los inline tienen prioridad. */
+
+/* Estilo para el mensaje de error o espera en index.html */
+#display-area p {
+    color: white;
+    font-size: 1.5em;
+    text-align: center;
+    padding: 40px;
+}
 
 
 /* --- Estilos para control.html (Panel de Control) --- */
+
+/* Estilos específicos para el body del panel de control */
 body.control-page {
-     background-color: #f0f2f5;
-     padding: 20px;
-     height: auto;
-     overflow-y: auto;
-     min-height: 100vh;
-     box-sizing: border-box;
+     background-color: #f0f2f5; /* Fondo grisáceo claro */
+     padding: 20px; /* Espacio alrededor del contenido */
+     height: auto; /* Altura determinada por el contenido */
+     min-height: 100vh; /* Asegura que ocupe al menos toda la altura visible */
+     overflow-y: auto; /* Permite scroll vertical PARA TODA LA PÁGINA si el contenido es más alto que la ventana */
+     box-sizing: border-box; /* Incluye padding en el cálculo de la altura/anchura */
 }
 
+/* Estilos para las secciones principales del panel */
 .control-section {
-    background-color: #fff;
-    padding: 20px 25px;
-    margin: 20px auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
-    width: 90%;
-    max-width: 750px;
-    box-sizing: border-box;
+    background-color: #ffffff; /* Fondo blanco */
+    padding: 20px 25px; /* Padding interior (vertical, horizontal) */
+    margin: 20px auto; /* Margen superior/inferior, centrado horizontal */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1); /* Sombra suave */
+    width: 90%; /* Ancho relativo */
+    max-width: 750px; /* Ancho máximo */
+    box-sizing: border-box; /* Padding/border incluidos en width */
 }
 
+/* Estilos para etiquetas de formulario */
 label {
-    display: block;
-    margin-top: 15px;
-    margin-bottom: 5px;
-    font-weight: 600;
+    display: block; /* Ocupa su propia línea */
+    margin-top: 15px; /* Espacio antes de la etiqueta */
+    margin-bottom: 5px; /* Espacio después de la etiqueta, antes del input */
+    font-weight: 600; /* Semi-negrita */
+    color: #606770; /* Gris oscuro */
+    font-size: 0.95em;
+}
+
+/* Estilos para inputs de texto/email/password/número y selects */
+input[type="url"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select {
+    width: 100%; /* Ocupa todo el ancho disponible */
+    padding: 12px; /* Padding interior */
+    margin-bottom: 15px; /* Espacio después del input */
+    border: 1px solid #ccd0d5; /* Borde grisáceo */
+    border-radius: 6px; /* Bordes redondeados */
+    box-sizing: border-box; /* Padding/border incluidos en width */
+    font-size: 1em;
+}
+
+/* Estilos generales para botones */
+button {
+    background-color: #1877f2; /* Azul Facebook */
+    color: white;
+    padding: 10px 18px; /* Padding interior */
+    border: none; /* Sin borde */
+    border-radius: 6px; /* Bordes redondeados */
+    cursor: pointer; /* Cursor de mano */
+    font-size: 1em;
+    font-weight: bold; /* Texto en negrita */
+    margin-right: 8px; /* Espacio a la derecha si hay varios botones */
+    margin-top: 10px; /* Espacio superior para separar de inputs */
+    transition: background-color 0.2s ease; /* Transición suave al pasar el ratón */
+}
+button:hover {
+    background-color: #166fe5; /* Azul un poco más oscuro al pasar */
+}
+button:disabled {
+    background-color: #e4e6eb; /* Fondo gris claro */
+    color: #bcc0c4; /* Texto gris claro */
+    cursor: not-allowed; /* Cursor de no permitido */
+}
+
+/* Estilo específico para el botón de Logout (opcional, si quieres diferenciarlo) */
+#logout-btn {
+    background-color: #f02849; /* Rojo */
+    font-weight: normal;
+    font-size: 0.9em;
+    padding: 8px 12px;
+}
+#logout-btn:hover {
+    background-color: #d91f3c; /* Rojo más oscuro */
+}
+
+/* Estilo para el mensaje de estado del admin */
+#admin-status {
+    font-size: 0.9em;
     color: #606770;
 }
 
-input[type="url"],
-input[type="number"],
-select {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    border: 1px solid #ccd0d5;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-
-button {
-    background-color: #1877f2;
-    color: white;
-    padding: 10px 18px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1em;
+/* Estilo para mensajes de error (login o otros) */
+.error-message {
+    color: #dc3545; /* Rojo oscuro (texto) */
     font-weight: bold;
-    margin-right: 8px;
-    margin-top: 10px;
-    transition: background-color 0.2s ease;
-}
-button:hover { background-color: #166fe5; }
-button:disabled {
-    background-color: #e4e6eb; color: #bcc0c4; cursor: not-allowed;
+    margin-top: 15px; /* Espacio superior */
+    padding: 10px 12px; /* Padding interior */
+    border: 1px solid #f5c6cb; /* Borde rojo claro */
+    border-radius: 4px; /* Bordes redondeados */
+    background-color: #f8d7da; /* Fondo rojo muy claro */
+    font-size: 0.9em;
 }
 
-/* Lista de Reproducción (sin scroll propio, usa el de la página) */
+
+/* --- Lista de Reproducción en control.html --- */
+
+/* Contenedor de la lista (UL) */
 #playlist-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 15px;
+    list-style: none; /* Sin viñetas */
+    padding: 0; /* Sin padding por defecto del UL */
+    margin: 20px 0 0 0; /* Margen superior, sin margen inferior/lados */
+    /* SIN max-height NI overflow-y: auto; para que se expanda */
 }
 
+/* Cada elemento de la lista (LI) */
 #playlist-list li {
-    background-color: #ffffff;
-    margin-bottom: 8px;
-    padding: 10px 15px;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    border: 1px solid #e4e6eb;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    background-color: #ffffff; /* Fondo blanco */
+    margin-bottom: 8px; /* Espacio entre elementos */
+    padding: 10px 15px; /* Padding interior */
+    border-radius: 6px; /* Bordes redondeados */
+    display: flex; /* Para alinear contenido y botones */
+    justify-content: space-between; /* Espacio entre contenido y botones */
+    align-items: center; /* Centrado vertical */
+    flex-wrap: wrap; /* Permite que los botones bajen en pantallas pequeñas */
+    border: 1px solid #e4e6eb; /* Borde gris claro */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Sombra muy sutil */
+    /* Transición opcional si animas algo */
+    /* transition: background-color 0.2s ease; */
 }
+/* #playlist-list li:hover { background-color: #f9f9f9; } */ /* Efecto hover opcional */
 
+
+/* Contenido del item (span con emoji, tipo, url) */
 #playlist-list li span {
-    flex-grow: 1;
-    margin-right: 10px;
-    word-break: break-all;
+    flex-grow: 1; /* Ocupa el espacio disponible */
+    margin-right: 15px; /* Espacio antes de los botones */
+    word-break: break-all; /* Parte palabras largas (URLs) */
     font-size: 0.95em;
-    color: #1c1e21;
+    color: #1c1e21; /* Texto oscuro */
 }
 
-#playlist-list li div { white-space: nowrap; }
+/* Contenedor de los botones de acción (div) */
+#playlist-list li div {
+    white-space: nowrap; /* Evita que los botones se separen en líneas */
+    flex-shrink: 0; /* Evita que el contenedor de botones se encoja */
+}
 
+/* Botones de acción dentro de la lista (más pequeños) */
 #playlist-list li button {
-    padding: 5px 8px; font-size: 0.9em; margin-left: 5px;
-    background-color: #e4e6eb; color: #1c1e21; font-weight: normal;
+    padding: 5px 8px; /* Padding más pequeño */
+    font-size: 0.9em; /* Texto más pequeño */
+    margin-left: 5px; /* Espacio entre botones */
+    margin-top: 5px; /* Espacio si se apilan verticalmente */
+    background-color: #e4e6eb; /* Fondo gris claro por defecto */
+    color: #1c1e21; /* Texto oscuro */
+    font-weight: normal; /* Sin negrita */
 }
-#playlist-list li button:hover { background-color: #d8dade; }
-#playlist-list li button:disabled { background-color: #f0f2f5; color: #ced0d4; }
+#playlist-list li button:hover {
+     background-color: #d8dade; /* Gris más oscuro al pasar */
+}
+#playlist-list li button:disabled {
+     background-color: #f0f2f5; /* Fondo aún más claro */
+     color: #ced0d4; /* Texto muy claro */
+}
 
+/* Hacer emojis de botones un poco más grandes si se usan */
 #playlist-list li button[title="Mover Arriba"],
 #playlist-list li button[title="Mover Abajo"],
 #playlist-list li button[title="Eliminar"] {
-    font-size: 1.1em;
+    font-size: 1.1em; /* Tamaño del emoji/texto */
+}
+
+/* Pequeños ajustes responsivos (opcional) */
+@media (max-width: 600px) {
+    body.control-page {
+        padding: 10px; /* Menos padding en pantallas pequeñas */
+    }
+    .control-section {
+        padding: 15px;
+        margin: 15px auto;
+    }
+    h1 { font-size: 1.5em; }
+    h2 { font-size: 1.2em; }
+    button { font-size: 0.9em; padding: 8px 12px; }
+    #playlist-list li { flex-direction: column; align-items: flex-start; } /* Apilar contenido y botones */
+    #playlist-list li div { margin-top: 8px; } /* Espacio entre contenido y botones apilados */
 }

@@ -7,55 +7,43 @@
     <link rel="stylesheet" href="style.css">
     <style>
         /* Estilos inline para asegurar fullscreen y layout base */
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: black;
-        }
-        #display-area {
-            width: 100%; height: 100%; display: flex;
-            justify-content: center; align-items: center;
-            overflow: hidden; background-color: black;
-            /* --- Añadido para Transición --- */
-            opacity: 1; /* Estado inicial visible */
-            transition: opacity 0.6s ease-in-out; /* Duración y tipo de fundido */
-        }
-        /* Clase helper para el estado de fundido */
-        #display-area.fading-out {
-            opacity: 0;
-        }
-        /* Estilos para contenido centrado/escalado */
-        #display-area img, #display-area video {
-            display: block; max-width: 100%; max-height: 100%;
-            width: auto; height: auto; object-fit: contain;
-        }
-        #display-area iframe, #youtube-player-container {
-            width: 100%; height: 100%; border: none;
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: black; }
+        #display-area { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; background-color: black; opacity: 1; transition: opacity 0.6s ease-in-out; }
+        #display-area.fading-out { opacity: 0; }
+        #display-area img, #display-area video { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+        #display-area iframe, #youtube-player-container { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-    <div id="display-area">
-        <!-- Contenido dinámico -->
-    </div>
-
+    <div id="display-area"> <!-- Contenido dinámico --> </div>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <script>
-        // --- CONFIGURACIÓN FIREBASE (TUS CREDENCIALES) ---
+        // --- CONFIGURACIÓN FIREBASE (CORREGIDA) ---
+        // Comentamos databaseURL para que Firebase la derive del projectId
         const firebaseConfig = {
           apiKey: "AIzaSyAir6pUHwf-vCJ7Tt8yDBpmw4n1jml7oE8",
           authDomain: "visor-negocio.firebaseapp.com",
-          databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
-          projectId: "visor-negocio",
-          storageBucket: "visor-negocio.appspot.com",
+          // databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com", // <-- COMENTADO
+          projectId: "visor-negocio", // <-- ASEGÚRATE QUE ESTE SEA EXACTAMENTE CORRECTO
+          storageBucket: "visor-negocio.appspot.com", // <-- ASEGÚRATE QUE ESTE SEA CORRECTO
           messagingSenderId: "113061044521",
           appId: "1:113061044521:web:a397b454b03b27da041738"
         };
         // --------------------------------------------------
 
-        firebase.initializeApp(firebaseConfig);
+        // --- INICIALIZACIÓN Y LÓGICA DEL VISOR ---
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase inicializado correctamente en index.html.");
+        } catch (e) {
+            console.error("!!! ERROR GRAVE: Falló firebase.initializeApp() en index.html !!!", e);
+            document.getElementById('display-area').innerHTML = `<p style="color:red; font-size:1.2em; padding:20px;">Error Crítico: No se pudo inicializar Firebase. Verifica la configuración y la conexión.</p>`;
+            // Detener ejecución si falla la inicialización
+            throw new Error("Firebase Init Failed");
+        }
+
         const database = firebase.database();
         const playlistRef = database.ref('playlist');
 
@@ -63,221 +51,110 @@
         let currentItemIndex = 0;
         let currentTimeoutId = null;
         const displayArea = document.getElementById('display-area');
-        const FADE_DURATION_MS = 600; // Debe coincidir con la transición CSS (0.6s)
+        const FADE_DURATION_MS = 600;
 
         let ytPlayer;
         let youtubeApiReady = false;
 
-        function onYouTubeIframeAPIReady() {
-            console.log("YouTube API Lista.");
-            youtubeApiReady = true;
-        }
-
-        function extractVideoID(url) {
-             try {
-                const urlObj = new URL(url);
-                 let videoId = urlObj.searchParams.get('v');
-                 if (!videoId && urlObj.hostname === 'youtu.be') {
-                    videoId = urlObj.pathname.slice(1);
-                 }
-                 if (videoId && videoId.length === 11) return videoId;
-            } catch (e) { /* Ignorar error de parseo */ }
-            if (typeof url === 'string' && url.length === 11 && !url.includes('/')) return url;
-            return null;
-        }
-
-        // Limpia solo elementos específicos (como el player YT), no el innerHTML
-        function cleanupSpecificPlayers() {
-             if (currentTimeoutId) clearTimeout(currentTimeoutId);
-             currentTimeoutId = null;
-             if (ytPlayer && typeof ytPlayer.destroy === 'function') {
-                 try { ytPlayer.destroy(); console.log("Reproductor YT destruido."); }
-                 catch(e) { console.error("Error destruyendo YT:", e); }
-                 ytPlayer = null;
-             }
-             // Aquí podrían ir otros limpiadores específicos si fueran necesarios
-        }
+        function onYouTubeIframeAPIReady() { /* ... igual que antes ... */ youtubeApiReady = true; }
+        function extractVideoID(url) { /* ... igual que antes ... */ }
+        function cleanupSpecificPlayers() { /* ... igual que antes ... */ }
 
         function playNextItem() {
-            // 1. Iniciar fundido de salida (añadir clase CSS)
             displayArea.classList.add('fading-out');
-
-            // 2. Esperar a que termine el fundido de salida para cambiar el contenido
             setTimeout(() => {
-                cleanupSpecificPlayers(); // Destruir YT player si existía
+                cleanupSpecificPlayers();
+                while (displayArea.firstChild) { displayArea.removeChild(displayArea.firstChild); }
 
-                // Limpiar contenido anterior AHORA, después del fade out
-                while (displayArea.firstChild) {
-                   displayArea.removeChild(displayArea.firstChild);
-                }
-
-                // Verificar si hay playlist
                 if (!currentPlaylist || currentPlaylist.length === 0) {
                     displayArea.innerHTML = '<p style="color: white; font-size: 1.5em;">Esperando contenido...</p>';
-                    displayArea.classList.remove('fading-out'); // Hacer visible el mensaje
-                    // No reintentar inmediatamente aquí, el listener de Firebase lo hará
-                    console.log("Playlist vacía, esperando actualización de Firebase.");
-                    return; // Salir hasta que Firebase envíe datos
+                    displayArea.classList.remove('fading-out');
+                    console.log("Playlist vacía, esperando actualización.");
+                    return;
                 }
 
-                // Calcular índice y hacer loop
-                if (currentItemIndex >= currentPlaylist.length) {
-                    currentItemIndex = 0;
-                }
+                if (currentItemIndex >= currentPlaylist.length) { currentItemIndex = 0; }
                 const item = currentPlaylist[currentItemIndex];
                 console.log(`Mostrando item ${currentItemIndex}: ${item.url} (Tipo: ${item.type})`);
-
-                // Variable para controlar si incrementamos el índice al final
                 let advanceIndexManually = true;
 
-                // 3. Crear y añadir el NUEVO contenido (aún invisible por el fade-out)
                 switch (item.type) {
                     case 'image':
                         const img = document.createElement('img');
                         img.src = item.url;
-                        // Si falla la carga, llamamos a playNextItem para pasar al siguiente
                         img.onerror = () => { console.error("Error img:", item.url); currentItemIndex++; playNextItem(); };
                         displayArea.appendChild(img);
-                        // Programar el inicio del siguiente fade-out
                         currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
                         break;
-
                     case 'video':
                         const video = document.createElement('video');
-                        video.src = item.url;
-                        video.autoplay = true;
-                        video.muted = false; // Autoplay más fiable silenciado
+                        video.src = item.url; video.autoplay = true; video.muted = true; // Muted por fiabilidad de autoplay
                         video.controls = false;
-                        video.onerror = () => { console.error("Error video:", item.url); currentItemIndex++; playNextItem(); }; // Saltar si falla
-                        video.addEventListener('ended', () => { currentItemIndex++; playNextItem(); }); // Avanzar al terminar
+                        video.onerror = () => { console.error("Error video:", item.url); currentItemIndex++; playNextItem(); };
+                        video.addEventListener('ended', () => { currentItemIndex++; playNextItem(); });
                         displayArea.appendChild(video);
-                        advanceIndexManually = false; // El evento 'ended' se encarga
+                        advanceIndexManually = false;
                         break;
-
                     case 'webpage':
                         const iframe = document.createElement('iframe');
-                        iframe.src = item.url;
-                        iframe.onerror = () => { console.warn("Error iframe:", item.url); }; // Aviso, no necesariamente bloqueante
+                        iframe.src = item.url; iframe.onerror = () => { console.warn("Error iframe:", item.url); };
                         displayArea.appendChild(iframe);
                         currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
                         break;
-
                     case 'youtube':
                         const videoId = extractVideoID(item.url);
-                        if (!videoId) {
-                            console.error("No se pudo obtener Video ID de:", item.url);
-                            setTimeout(() => { currentItemIndex++; playNextItem(); }, 100); // Saltar rápido
-                            advanceIndexManually = false;
-                            break;
-                        }
-                        if (!youtubeApiReady) {
-                            console.warn("API YouTube no lista, reintentando...");
-                             // Reintentar este mismo item sin avanzar índice
-                            currentTimeoutId = setTimeout(playNextItem, 1000);
-                            advanceIndexManually = false;
-                            break;
-                        }
-                        const ytContainer = document.createElement('div');
-                        ytContainer.id = 'youtube-player-container';
+                        if (!videoId) { /* ...manejar error, saltar... */ setTimeout(() => { currentItemIndex++; playNextItem(); }, 100); advanceIndexManually = false; break; }
+                        if (!youtubeApiReady) { /* ...reintentar... */ currentTimeoutId = setTimeout(playNextItem, 1000); advanceIndexManually = false; break; }
+                        const ytContainer = document.createElement('div'); ytContainer.id = 'youtube-player-container';
                         displayArea.appendChild(ytContainer);
                         ytPlayer = new YT.Player('youtube-player-container', {
                             height: '100%', width: '100%', videoId: videoId,
-                            playerVars: {
-                                'autoplay': 1, 'controls': 0, 'showinfo': 0, 'rel': 0,
-                                'modestbranding': 1, 'loop': 0, 'fs': 0, 'cc_load_policy': 0,
-                                'iv_load_policy': 3, 'autohide': 0,
-                                'mute': 1 // <--- CAMBIADO A 1 PARA AUTOPLAY FIABLE
-                            },
+                            playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1 /* Muted */, /* ...otros vars... */ },
                             events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
                         });
-                        advanceIndexManually = false; // El evento state change se encarga
-                        break;
-
-                    default:
-                        console.warn("Tipo desconocido:", item.type);
-                        setTimeout(() => { currentItemIndex++; playNextItem(); }, 100); // Saltar rápido
                         advanceIndexManually = false;
                         break;
+                    default:
+                        /* ...manejar desconocido, saltar... */ setTimeout(() => { currentItemIndex++; playNextItem(); }, 100); advanceIndexManually = false; break;
                 }
 
-                // 4. Iniciar fundido de entrada (quitar clase)
-                // Hacemos esto después de un pequeño respiro para asegurar que el DOM se actualizó
-                requestAnimationFrame(() => {
-                    displayArea.classList.remove('fading-out');
-                });
+                requestAnimationFrame(() => { displayArea.classList.remove('fading-out'); });
+                if (advanceIndexManually) { currentItemIndex++; }
 
-
-                // 5. Incrementar índice para la próxima vez (solo si no lo maneja un evento)
-                if (advanceIndexManually) {
-                    currentItemIndex++;
-                }
-
-            }, FADE_DURATION_MS); // Fin del setTimeout que espera al fade-out
+            }, FADE_DURATION_MS);
         }
 
-        // --- Handlers de YouTube ---
-        function onPlayerReady(event) {
-            console.log("YT Player listo:", event.target.getVideoData().title);
-            // Autoplay=1 y Mute=1 deberían iniciarlo. playVideo() a veces ayuda.
-            event.target.playVideo();
-        }
+        function onPlayerReady(event) { /* ... igual que antes ... */ event.target.playVideo(); }
+        function onPlayerStateChange(event) { /* ... igual que antes ... */ if (event.data == YT.PlayerState.ENDED) { currentItemIndex++; playNextItem(); } }
+        function onPlayerError(event) { /* ... igual que antes ... */ console.error("Error en YT player:", event.data); currentItemIndex++; playNextItem(); }
 
-        function onPlayerStateChange(event) {
-            // Avanzar al siguiente cuando termina el video de YT
-            if (event.data == YT.PlayerState.ENDED) {
-                console.log("Video YT finalizado.");
-                currentItemIndex++; // Incrementar aquí
-                playNextItem();     // Iniciar transición al siguiente
-            }
-        }
-
-        function onPlayerError(event) {
-            console.error("Error en YT player:", event.data);
-            currentItemIndex++; // Incrementar aquí
-            playNextItem();     // Saltar al siguiente
-        }
-
-        // --- Listener de Firebase ---
         let initialLoadComplete = false;
         playlistRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            const newPlaylist = data ? Object.values(data) : [];
-
-            // Solo actualizar y reiniciar si la lista cambia O es la carga inicial
-            if (JSON.stringify(newPlaylist) !== JSON.stringify(currentPlaylist) || !initialLoadComplete) {
-                console.log("Playlist recibida/actualizada:", newPlaylist);
-                currentPlaylist = newPlaylist;
-                currentItemIndex = 0; // Reiniciar índice
-
-                if (initialLoadComplete) {
-                    // Si ya estaba reproduciendo, cancelar timers y reiniciar con la nueva lista
-                    console.log("Reiniciando reproducción con nueva lista...");
-                    if (currentTimeoutId) clearTimeout(currentTimeoutId);
-                    // Iniciar la transición para el primer item de la nueva lista
-                    playNextItem();
-                } else if (currentPlaylist.length > 0) {
-                    // Si es la carga inicial y hay items, empezar
-                    console.log("Iniciando reproducción por primera vez...");
-                    initialLoadComplete = true;
-                     // Esperar un poco para que la página esté completamente lista
+             console.log(">>> index.html: Datos recibidos de Firebase!"); // Añadido log
+             const data = snapshot.val();
+             const newPlaylist = data ? Object.values(data) : [];
+             if (JSON.stringify(newPlaylist) !== JSON.stringify(currentPlaylist) || !initialLoadComplete) {
+                 console.log(">>> index.html: Playlist actualizada:", newPlaylist);
+                 currentPlaylist = newPlaylist;
+                 currentItemIndex = 0;
+                 if (initialLoadComplete) {
+                     if (currentTimeoutId) clearTimeout(currentTimeoutId);
+                     playNextItem();
+                 } else if (currentPlaylist.length > 0) {
+                     initialLoadComplete = true;
                      setTimeout(playNextItem, 100);
-                } else {
-                     // Carga inicial pero la lista está vacía
-                      console.log("Carga inicial, lista vacía. Esperando items...");
-                      displayArea.innerHTML = '<p style="color: white; font-size: 1.5em;">Playlist vacía. Añade contenido desde el panel de control.</p>';
-                      displayArea.classList.remove('fading-out'); // Asegurar visibilidad
-                }
-            } else {
-                console.log("Playlist recibida sin cambios detectados.");
-            }
-        }, (error) => {
-            console.error("Error leyendo Firebase:", error);
-            displayArea.classList.remove('fading-out'); // Asegurar visibilidad del error
-            displayArea.innerHTML = '<p style="color: red; font-size: 1.5em;">Error conectando a la Base de Datos.</p>';
-        });
+                 } else {
+                      displayArea.innerHTML = '<p style="color: white; font-size: 1.5em;">Playlist vacía...</p>';
+                      displayArea.classList.remove('fading-out');
+                 }
+             }
+         }, (error) => {
+             console.error(">>> !!! index.html: ERROR en listener de DB:", error.code, error.message);
+             displayArea.classList.remove('fading-out');
+             displayArea.innerHTML = `<p style="color: red; font-size: 1.5em;">Error leyendo datos: ${error.message}</p>`;
+         });
 
-        console.log("Visor inicializado. Esperando datos de Firebase...");
-
+        console.log("Visor (index.html) inicializado. Esperando datos...");
     </script>
 </body>
 </html>

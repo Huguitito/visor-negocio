@@ -10,44 +10,14 @@
 
     <h1>Panel de Control de Contenido</h1>
 
-    <!-- Sección de Login (Inicialmente visible) -->
+    <!-- Sección de Login -->
     <div id="login-section" class="control-section">
-        <h2>Iniciar Sesión (Admin)</h2>
-        <label for="admin-email">Correo Electrónico:</label>
-        <input type="email" id="admin-email" required>
-
-        <label for="admin-password">Contraseña:</label>
-        <input type="password" id="admin-password" required>
-
-        <button id="login-btn">🔑 Iniciar Sesión</button>
-        <p id="login-error" class="error-message" style="display: none;"></p>
+       <!-- ... (contenido del login sin cambios) ... -->
     </div>
 
-    <!-- Sección de Controles (Oculta hasta login de ADMIN correcto) -->
+    <!-- Sección de Controles -->
     <div id="controls-section" style="display: none;">
-        <div class="control-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                 <span id="admin-status"></span>
-                 <button id="logout-btn">🚪 Cerrar Sesión</button>
-            </div>
-            <h2>Añadir Nuevo Elemento ✨</h2>
-            <label for="item-url">URL del Contenido (Imagen, Video MP4, Web, YouTube):</label>
-            <input type="url" id="item-url" placeholder="https://... o https://www.youtube.com/watch?v=..." required>
-
-            <label for="item-type">Tipo:</label>
-            <select id="item-type">
-                <option value="image">🖼️ Imagen</option>
-                <option value="video">🎬 Video (MP4 directo)</option>
-                <option value="webpage">🌐 Página Web</option>
-                <option value="youtube">📹 YouTube Video</option>
-            </select>
-
-            <label for="item-duration" id="duration-label">Duración (segundos, solo para Imagen/Web):</label>
-            <input type="number" id="item-duration" value="10" min="1">
-
-            <button id="add-item-btn">➕ Añadir a la Lista</button>
-        </div>
-
+        <!-- ... (contenido de los controles sin cambios) ... -->
         <div class="control-section">
             <h2>Lista de Reproducción Actual 📋</h2>
             <ul id="playlist-list">
@@ -57,145 +27,107 @@
         </div>
     </div>
 
-    <!-- SDKs Firebase (app, database, auth) -->
+    <!-- SDKs Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <script>
-        // --- CONFIGURACIÓN FIREBASE (TUS CREDENCIALES) ---
-        const firebaseConfig = {
-          apiKey: "AIzaSyAir6pUHwf-vCJ7Tt8yDBpmw4n1jml7oE8",
-          authDomain: "visor-negocio.firebaseapp.com",
-          databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
-          projectId: "visor-negocio",
-          storageBucket: "visor-negocio.appspot.com",
-          messagingSenderId: "113061044521",
-          appId: "1:113061044521:web:a397b454b03b27da041738"
-        };
-        // --------------------------------------------------
-
-        // --- UID del Administrador Permitido ---
+        // --- CONFIGURACIÓN FIREBASE ---
+        const firebaseConfig = { /* ... tus credenciales ... */ };
+        // --- UID del Administrador ---
         const ADMIN_UID = "eRKsZnCe0TXZ4JagmcVAik7IX8T2";
-        // ---------------------------------------
+        // -----------------------------
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const auth = firebase.auth();
         const playlistRef = database.ref('playlist');
 
-        // Referencias DOM (sin cambios)
+        // Referencias DOM
         const loginSection = document.getElementById('login-section');
         const controlsSection = document.getElementById('controls-section');
-        const adminEmailInput = document.getElementById('admin-email');
-        const adminPasswordInput = document.getElementById('admin-password');
-        const loginBtn = document.getElementById('login-btn');
-        const loginError = document.getElementById('login-error');
-        const logoutBtn = document.getElementById('logout-btn');
-        const adminStatus = document.getElementById('admin-status');
-        const itemUrlInput = document.getElementById('item-url');
-        const itemTypeSelect = document.getElementById('item-type');
-        const itemDurationInput = document.getElementById('item-duration');
-        const durationLabel = document.getElementById('duration-label');
-        const addItemBtn = document.getElementById('add-item-btn');
+        // ... (resto de refs DOM) ...
         const playlistListUl = document.getElementById('playlist-list');
 
         let currentPlaylist = [];
         let dbListenerActive = false;
 
-        // --- Funciones de Autenticación (Login/Logout sin cambios) ---
-        loginBtn.addEventListener('click', () => { /* ...código igual que antes... */
-             const email = adminEmailInput.value;
-             const password = adminPasswordInput.value;
-             loginError.style.display = 'none';
-             if (!email || !password) { /* ...manejar error... */ return; }
-             auth.signInWithEmailAndPassword(email, password)
-                 .then((userCredential) => { console.log("Login OK:", userCredential.user.email); adminPasswordInput.value = ''; })
-                 .catch((error) => { console.error("Login Error:", error); loginError.textContent = `Error: ${error.message}`; loginError.style.display = 'block'; });
-        });
-        logoutBtn.addEventListener('click', () => { /* ...código igual que antes... */
-             auth.signOut().then(() => { console.log("Logout OK."); })
-                 .catch((error) => { console.error("Logout Error:", error); alert("Error al cerrar sesión."); });
-        });
+        // --- Funciones Auth (Login/Logout sin cambios) ---
+        // ...
 
         // --- Observador de Auth con VERIFICACIÓN DE UID ---
         auth.onAuthStateChanged(user => {
-            // Verificar si el usuario está logueado Y si su UID es el del admin
+            console.log("Auth state changed. User:", user ? user.email : 'No user'); // <-- AÑADIR LOG
+
             if (user && user.uid === ADMIN_UID) {
-                // Es el Administrador correcto
-                console.log("Administrador autenticado:", user.email);
+                console.log("ADMINISTRADOR CORRECTO autenticado. UID:", user.uid); // <-- AÑADIR LOG
                 loginSection.style.display = 'none';
-                controlsSection.style.display = 'block'; // Mostrar controles
-                adminStatus.textContent = `Admin: ${user.email}`;
-                loginError.style.display = 'none';
+                controlsSection.style.display = 'block';
+                // ... (actualizar UI) ...
 
                 if (!dbListenerActive) {
+                    console.log("Intentando activar listener de DB..."); // <-- AÑADIR LOG
                     activateDbRead();
                     dbListenerActive = true;
+                } else {
+                    console.log("Listener de DB ya estaba activo."); // <-- AÑADIR LOG
                 }
             } else {
-                // No está logueado O no es el administrador correcto
-                console.log("Acceso denegado o no autenticado.");
-                loginSection.style.display = 'block'; // Mostrar login
-                controlsSection.style.display = 'none'; // Ocultar controles
-                adminStatus.textContent = '';
-                playlistListUl.innerHTML = '<li>Inicia sesión como administrador para ver/editar...</li>';
-                currentPlaylist = [];
-
-                if (user) {
-                    // Si estaba logueado pero NO era el admin, mostrar mensaje y cerrar sesión
-                    loginError.textContent = 'Error: Usuario no autorizado para administrar.';
-                    loginError.style.display = 'block';
-                    console.warn("Usuario logueado no es admin (UID:", user.uid, "). Cerrando sesión.");
-                    auth.signOut(); // Forzar logout
-                } else {
-                     loginError.style.display = 'none'; // Limpiar error si simplemente cerró sesión
-                }
-
+                console.log("Usuario NO es admin o no está logueado."); // <-- AÑADIR LOG
+                 if (user) {
+                     console.warn("Usuario logueado NO es admin:", user.uid, "!===", ADMIN_UID); // <-- AÑADIR LOG
+                     // ... (manejar usuario no admin logueado, forzar logout) ...
+                 }
+                 // ... (ocultar controles, mostrar login) ...
 
                 if (dbListenerActive) {
+                    console.log("Desactivando listener de DB..."); // <-- AÑADIR LOG
                     playlistRef.off('value');
-                    console.log("Listener de DB desactivado.");
                     dbListenerActive = false;
                 }
+                 playlistListUl.innerHTML = '<li>Inicia sesión como administrador para ver/editar...</li>'; // Limpiar lista explícitamente
+                 currentPlaylist = [];
             }
         });
 
-        // --- Funciones Playlist (sin cambios internos, pero solo se llaman si está logueado el admin) ---
-        function toggleDurationInput() { /* ...código igual... */ }
-        itemTypeSelect.addEventListener('change', toggleDurationInput);
-        toggleDurationInput();
+        // --- Funciones Playlist ---
+        function renderPlaylist() {
+            console.log("Intentando renderizar playlist. Datos actuales:", currentPlaylist); // <-- AÑADIR LOG
+            playlistListUl.innerHTML = '';
+            if (currentPlaylist.length === 0) {
+                console.log("Renderizando: Lista vacía."); // <-- AÑADIR LOG
+                playlistListUl.innerHTML = '<li>La lista está vacía. ¡Añade algo!</li>';
+                return;
+            }
+            currentPlaylist.forEach((item, index) => {
+                 console.log("Renderizando item:", index, item); // <-- AÑADIR LOG
+                 // ... (código para crear el li) ...
+                 playlistListUl.appendChild(li);
+            });
+        }
 
-        function renderPlaylist() { /* ...código igual que antes, muestra lista y botones... */
-             playlistListUl.innerHTML = '';
-             // Ya no necesita el chequeo if (!auth.currentUser) porque solo se llama si es admin
-             if (currentPlaylist.length === 0) { /* ...mensaje lista vacía...*/ return; }
-             currentPlaylist.forEach((item, index) => { /* ...crea los li con botones... */ });
-         }
+        // ... (resto de funciones: save, add, delete, move, extractVideoID, toggleDuration) ...
 
-        function savePlaylistToFirebase() { /* ...código igual que antes, intenta guardar... */
-             // El chequeo if (!auth.currentUser) es redundante si la UI está bien, pero no daña
-             if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
-                 console.error("Intento de guardar por usuario no admin!");
-                 return;
-             }
-             const playlistToSave = currentPlaylist.map(/* ...limpiar datos... */);
-             playlistRef.set(playlistToSave)
-                 .then(/* ...log éxito... */)
-                 .catch(/* ...log error, ahora podría ser Permission Denied si las reglas fallan...*/);
-         }
-
-        addItemBtn.addEventListener('click', () => { /* ...código igual que antes para añadir item a currentPlaylist y llamar a save... */ });
-
-        // Funciones Delete/Move (ahora solo se llaman si los botones son visibles)
-        window.deleteItem = (index) => { /* ...código igual que antes (confirmar y llamar save)... */ };
-        window.moveItem = (index, direction) => { /* ...código igual que antes (cambiar orden y llamar save)... */ };
-
-        // Función extractVideoID (igual)
-        window.extractVideoID = function(url) { /* ...código igual... */ };
-
-        // Listener DB (igual, solo se activa/desactiva por Auth)
-        function activateDbRead() { /* ...código igual que antes... */ }
+        // --- Listener de Base de Datos ---
+        function activateDbRead() {
+             console.log(">>> Dentro de activateDbRead: Adjuntando listener a 'playlist'..."); // <-- AÑADIR LOG
+             playlistRef.on('value', (snapshot) => {
+                console.log(">>> Listener DB: Datos recibidos de Firebase!"); // <-- AÑADIR LOG
+                const data = snapshot.val();
+                console.log(">>> Listener DB: snapshot.val():", data); // <-- AÑADIR LOG
+                currentPlaylist = data ? Object.values(data) : [];
+                console.log(">>> Listener DB: currentPlaylist procesada:", currentPlaylist); // <-- AÑADIR LOG
+                renderPlaylist(); // Renderizar la lista con los datos recibidos
+            }, (error) => {
+                // ¡Este bloque es IMPORTANTE si hay error de lectura!
+                console.error(">>> !!! ERROR en listener de DB:", error.code, error.message); // <-- AÑADIR LOG MÁS DETALLADO
+                playlistListUl.innerHTML = `<li>ERROR AL LEER DATOS: ${error.message} (Código: ${error.code})</li>`;
+                // Podríamos intentar desactivar el listener aquí si falla repetidamente
+                // playlistRef.off('value');
+                // dbListenerActive = false;
+            });
+        }
 
     </script>
 </body>

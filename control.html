@@ -3,47 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Matrix 🕹️</title>
+    <title>Control Matrix 🕹️ [ACCESO RESTRINGIDO]</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos para ocultar/mostrar secciones y centrar login */
+        .hidden { display: none !important; }
+        #login-section-wrapper { /* Contenedor para centrar el login */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh; /* Para que el login no quede muy arriba */
+        }
+        /* Los estilos de .control-section ya están en style.css */
+    </style>
 </head>
 <body class="control-page">
-    <header class="main-header">
-        <h1><span class="glow-text">CONTROL</span>_MATRIX</h1>
-        <p class="subtitle">Interfaz de gestión de contenido visual</p>
-    </header>
 
-    <div class="control-section add-item-section">
-        <h2><span class="icon">➕</span> Inyectar Nuevo Contenido</h2>
-        <label for="item-url">URL del Recurso (Datastream):</label>
-        <input type="url" id="item-url" placeholder="https://... o https://www.youtube.com/watch?v=..." required>
-
-        <label for="item-type">Tipo de Transmisión:</label>
-        <select id="item-type">
-            <option value="image">🖼️ Holograma Estático (Imagen)</option>
-            <option value="video">🎬 Secuencia Cinética (Video MP4)</option>
-            <option value="webpage">🌐 Portal Dimensional (Página Web)</option>
-            <option value="youtube">📹 Canal YouTube (Video Stream)</option>
-        </select>
-
-        <label for="item-duration" id="duration-label">Duración de Exposición (seg, para Holograma/Portal):</label>
-        <input type="number" id="item-duration" value="10" min="1">
-
-        <button id="add-item-btn" class="primary-button"><span class="icon">⚡</span> Añadir a la Secuencia</button>
+    <!-- SECCIÓN DE LOGIN (envuelta para centrar mejor) -->
+    <div id="login-section-wrapper">
+        <div id="login-section" class="control-section">
+            <h2><span class="icon">🔑</span> Acceso al Núcleo de Control</h2>
+            <label for="email">Identificador (Email):</label>
+            <input type="email" id="email" placeholder="tu@email.com" value="huguitito@gmail.com"> <!-- Pre-llenado para conveniencia -->
+            <label for="password">Contraseña de Acceso:</label>
+            <input type="password" id="password" placeholder="••••••••">
+            <button id="login-btn" class="primary-button"><span class="icon">🔗</span> Conectar</button>
+            <p id="login-error" class="error-message hidden"></p> <!-- Clase para mensajes de error -->
+        </div>
     </div>
 
-    <div class="control-section playlist-section">
-        <h2><span class="icon">📜</span> Secuencia de Transmisión Actual</h2>
-        <ul id="playlist-list">
-            <li>Analizando flujo de datos...</li>
-        </ul>
-        <p class="info-text"><em><span class="icon">🔄</span> Cambios sincronizados en tiempo real con el visor.</em></p>
-    </div>
+    <!-- CONTENIDO PRINCIPAL (Inicialmente oculto) -->
+    <div id="main-content" class="hidden">
+        <header class="main-header">
+            <h1><span class="glow-text">CONTROL</span>_MATRIX
+                <button id="logout-btn" class="action-button logout-button" title="Desconectar Sesión">
+                    🛑 Salir
+                </button>
+            </h1>
+            <p class="subtitle">Gestión de Contenido Visual // Operador: <span id="user-email-display" class="glow-text"></span></p>
+        </header>
 
-    <footer class="main-footer">
-        <p>&copy; 2077 VisorCorp Systems - Alpha Build</p>
-    </footer>
+        <div class="control-section add-item-section">
+            <h2><span class="icon">➕</span> Inyectar Nuevo Contenido</h2>
+            <label for="item-url">URL del Recurso (Datastream):</label>
+            <input type="url" id="item-url" placeholder="https://... o https://www.youtube.com/watch?v=..." required>
+            <label for="item-type">Tipo de Transmisión:</label>
+            <select id="item-type">
+                <option value="image">🖼️ Holograma Estático (Imagen)</option>
+                <option value="video">🎬 Secuencia Cinética (Video MP4)</option>
+                <option value="webpage">🌐 Portal Dimensional (Página Web)</option>
+                <option value="youtube">📹 Canal YouTube (Video Stream)</option>
+            </select>
+            <label for="item-duration" id="duration-label">Duración de Exposición (seg, para Holograma/Portal):</label>
+            <input type="number" id="item-duration" value="10" min="1">
+            <button id="add-item-btn" class="primary-button"><span class="icon">⚡</span> Añadir a la Secuencia</button>
+        </div>
+
+        <div class="control-section playlist-section">
+            <h2><span class="icon">📜</span> Secuencia de Transmisión Actual</h2>
+            <ul id="playlist-list"><li>Analizando flujo de datos...</li></ul>
+            <p class="info-text"><em><span class="icon">🔄</span> Cambios sincronizados en tiempo real con el visor.</em></p>
+        </div>
+
+        <footer class="main-footer">
+            <p>&copy; 2077 VisorCorp Systems - Build Protegido</p>
+        </footer>
+    </div> <!-- Fin de #main-content -->
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> <!-- SDK de Auth -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
         // --- CONFIGURACIÓN FIREBASE (TUS CREDENCIALES) ---
@@ -56,35 +84,95 @@
           messagingSenderId: "113061044521",
           appId: "1:113061044521:web:a397b454b03b27da041738"
         };
-        // --------------------------------------------------
-
-        // El Javascript aquí es el mismo que en la respuesta anterior
-        // (Inicialización de Firebase, listeners, funciones add/delete/move, etc.)
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const database = firebase.database();
         const playlistRef = database.ref('playlist');
 
+        // --- Elementos del DOM ---
+        const loginSectionWrapper = document.getElementById('login-section-wrapper');
+        const mainContent = document.getElementById('main-content');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginErrorP = document.getElementById('login-error');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const addItemBtn = document.getElementById('add-item-btn'); // Referencia para habilitar/deshabilitar
+
+        // --- Lógica de Autenticación ---
+        loginBtn.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            loginErrorP.classList.add('hidden');
+            loginErrorP.textContent = '';
+
+            auth.signInWithEmailAndPassword(email, password)
+                .catch((error) => {
+                    console.error("Error de inicio de sesión:", error.code, error.message);
+                    let friendlyMessage = "Error de autenticación. Verifica tus credenciales.";
+                    if (error.code === 'auth/wrong-password') {
+                        friendlyMessage = "Contraseña incorrecta. Intenta de nuevo.";
+                    } else if (error.code === 'auth/user-not-found') {
+                        friendlyMessage = "Usuario no encontrado.";
+                    }
+                    loginErrorP.textContent = friendlyMessage;
+                    loginErrorP.classList.remove('hidden');
+                });
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().catch((error) => console.error("Error al cerrar sesión:", error));
+        });
+
+        // --- Observador del Estado de Autenticación ---
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Usuario está conectado
+                loginSectionWrapper.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                userEmailDisplay.textContent = user.email;
+                toggleDurationInput(); // Llamar para ajustar visibilidad campo duración
+
+                // Habilitar controles de playlist si es el UID correcto
+                if (user.uid === 'eRKsZnCe0TXZ4JagmcVAik7IX8T2') {
+                    console.log("Administrador conectado. Controles de escritura habilitados.");
+                    addItemBtn.disabled = false;
+                    // (Los botones de mover/eliminar ya se habilitan/deshabilitan dinámicamente)
+                } else {
+                    console.warn("Usuario conectado, pero no es el administrador. Controles de escritura DESHABILITADOS.");
+                    addItemBtn.disabled = true;
+                    // Opcional: Deshabilitar también mover/eliminar si no es admin
+                    // Podríamos añadir una clase a los botones y deshabilitarlos con CSS o JS
+                }
+
+                if (!playlistListenerAttached) attachPlaylistListener();
+
+            } else {
+                // Usuario no está conectado
+                loginSectionWrapper.classList.remove('hidden');
+                mainContent.classList.add('hidden');
+                userEmailDisplay.textContent = '';
+                addItemBtn.disabled = true; // Deshabilitar por si acaso
+            }
+        });
+
+        // --- Lógica de la Playlist ---
         const itemUrlInput = document.getElementById('item-url');
         const itemTypeSelect = document.getElementById('item-type');
         const itemDurationInput = document.getElementById('item-duration');
         const durationLabel = document.getElementById('duration-label');
-        const addItemBtn = document.getElementById('add-item-btn');
         const playlistListUl = document.getElementById('playlist-list');
-
         let currentPlaylist = [];
+        let playlistListenerAttached = false;
 
         function toggleDurationInput() {
             const selectedType = itemTypeSelect.value;
-            if (selectedType === 'video' || selectedType === 'youtube') {
-                itemDurationInput.style.display = 'none';
-                durationLabel.style.display = 'none';
-            } else {
-                itemDurationInput.style.display = 'block';
-                durationLabel.style.display = 'block';
-            }
+            const isVideoOrYoutube = selectedType === 'video' || selectedType === 'youtube';
+            itemDurationInput.style.display = isVideoOrYoutube ? 'none' : 'block';
+            durationLabel.style.display = isVideoOrYoutube ? 'none' : 'block';
         }
         itemTypeSelect.addEventListener('change', toggleDurationInput);
-        toggleDurationInput();
 
         function renderPlaylist() {
             playlistListUl.innerHTML = '';
@@ -92,103 +180,78 @@
                 playlistListUl.innerHTML = '<li class="empty-list-item">Secuencia vacía. Esperando inyección de datos...</li>';
                 return;
             }
+            const isAdmin = auth.currentUser && auth.currentUser.uid === 'eRKsZnCe0TXZ4JagmcVAik7IX8T2';
 
             currentPlaylist.forEach((item, index) => {
                 const li = document.createElement('li');
-                 let durationText = '';
-                 if (item.type !== 'video' && item.type !== 'youtube') {
-                    durationText = ` <span class="duration-tag">(${item.duration}s)</span>`;
-                 }
-                 let displayUrl = item.url;
-                 if (displayUrl.length > 40) { // Acortar un poco más para el nuevo estilo
-                    displayUrl = displayUrl.substring(0, 37) + '...';
-                 }
+                 let durationText = (item.type !== 'video' && item.type !== 'youtube') ? ` <span class="duration-tag">(${item.duration}s)</span>` : '';
+                 let displayUrl = item.url.length > 40 ? item.url.substring(0, 37) + '...' : item.url;
                  let itemIcon = '❓';
-                 switch(item.type) {
-                    case 'image': itemIcon = '🖼️'; break;
-                    case 'video': itemIcon = '🎬'; break;
-                    case 'webpage': itemIcon = '🌐'; break;
-                    case 'youtube': itemIcon = '📹'; break;
-                 }
-
+                 switch(item.type) { case 'image': itemIcon = '🖼️'; break; case 'video': itemIcon = '🎬'; break; case 'webpage': itemIcon = '🌐'; break; case 'youtube': itemIcon = '📹'; break; }
 
                 li.innerHTML = `
-                    <div class="item-info">
-                        <span class="item-icon">${itemIcon}</span>
-                        <span class="item-type-tag">[${item.type.toUpperCase()}]</span>
-                        <span class="item-url-text">${displayUrl}</span>
-                        ${durationText}
-                    </div>
+                    <div class="item-info"> <span class="item-icon">${itemIcon}</span> <span class="item-type-tag">[${item.type.toUpperCase()}]</span> <span class="item-url-text">${displayUrl}</span> ${durationText} </div>
                     <div class="item-actions">
-                        <button class="action-button" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Elevar Prioridad">🔼</button>
-                        <button class="action-button" onclick="moveItem(${index}, 1)" ${index === currentPlaylist.length - 1 ? 'disabled' : ''} title="Bajar Prioridad">🔽</button>
-                        <button class="action-button danger" onclick="deleteItem(${index})" title="Eliminar de Secuencia">🗑️</button>
-                    </div>
-                `;
-                 li.title = `Recurso: ${item.url}`; // Tooltip con URL completa
+                        <button class="action-button" onclick="moveItem(${index}, -1)" ${index === 0 || !isAdmin ? 'disabled' : ''} title="Elevar Prioridad">🔼</button>
+                        <button class="action-button" onclick="moveItem(${index}, 1)" ${index === currentPlaylist.length - 1 || !isAdmin ? 'disabled' : ''} title="Bajar Prioridad">🔽</button>
+                        <button class="action-button danger" onclick="deleteItem(${index})" ${!isAdmin ? 'disabled' : ''} title="Eliminar de Secuencia">🗑️</button>
+                    </div>`;
+                 li.title = `Recurso: ${item.url}`;
                 playlistListUl.appendChild(li);
             });
         }
 
         function savePlaylistToFirebase() {
-            const playlistToSave = currentPlaylist.map(item => {
-                const cleanItem = { url: item.url, type: item.type };
-                if (item.type === 'image' || item.type === 'webpage') {
-                    cleanItem.duration = parseInt(item.duration) || 10;
-                }
-                return cleanItem;
-            });
-            playlistRef.set(playlistToSave)
-                .then(() => console.log("SYNCRONIZADO: Secuencia actualizada en la Matrix."))
-                .catch(error => console.error("ERROR DE SINCRONIZACIÓN:", error));
+            if (auth.currentUser && auth.currentUser.uid === 'eRKsZnCe0TXZ4JagmcVAik7IX8T2') {
+                const playlistToSave = currentPlaylist.map(item => { const cleanItem = { url: item.url, type: item.type }; if (item.type === 'image' || item.type === 'webpage') { cleanItem.duration = parseInt(item.duration) || 10; } return cleanItem; });
+                playlistRef.set(playlistToSave)
+                    .then(() => console.log("SYNCRONIZADO: Secuencia actualizada en la Matrix."))
+                    .catch(error => {
+                        console.error("ERROR DE SINCRONIZACIÓN:", error);
+                        alert("Error al guardar la playlist. Verifica tus permisos o la conexión.");
+                    });
+            } else {
+                console.warn("Intento de guardar sin ser administrador. Operación denegada.");
+                alert("No tienes permisos para modificar la playlist.");
+            }
         }
 
         addItemBtn.addEventListener('click', () => {
-            const url = itemUrlInput.value.trim();
-            let type = itemTypeSelect.value;
-            const duration = parseInt(itemDurationInput.value) || 10;
-
-            if (!url) { alert("ALERTA: URL de Recurso no válida."); return; }
-
-            if (url.includes('youtube.com/watch?') || url.includes('youtu.be/')) {
-                 if (type !== 'youtube') {
-                     type = 'youtube'; itemTypeSelect.value = 'youtube'; toggleDurationInput();
-                 }
+            if (!auth.currentUser || auth.currentUser.uid !== 'eRKsZnCe0TXZ4JagmcVAik7IX8T2') {
+                alert("Acción no permitida. Debes ser administrador.");
+                return;
             }
-            // Re-usar función de index.html para validación de ID de YouTube
-            if (type === 'youtube' && !window.parent.extractVideoID(url) && !extractVideoID(url) ) { // Intenta con la función local también
-                 alert("ALERTA: URL de YouTube inválida o ID no extraíble."); return;
-             }
-
-            const newItem = { url, type, duration };
-            currentPlaylist.push(newItem);
-            savePlaylistToFirebase();
-            itemUrlInput.value = ''; itemTypeSelect.value = 'image'; itemDurationInput.value = '10';
-            toggleDurationInput();
+            const url = itemUrlInput.value.trim(); let type = itemTypeSelect.value; const duration = parseInt(itemDurationInput.value) || 10;
+            if (!url) { alert("ALERTA: URL de Recurso no válida."); return; }
+            if (url.includes('youtube.com/watch?') || url.includes('youtu.be/')) { if (type !== 'youtube') { type = 'youtube'; itemTypeSelect.value = 'youtube'; toggleDurationInput(); } }
+            if (type === 'youtube' && !extractVideoID(url)) { alert("ALERTA: URL de YouTube inválida o ID no extraíble."); return; }
+            const newItem = { url, type, duration }; currentPlaylist.push(newItem); savePlaylistToFirebase();
+            itemUrlInput.value = ''; itemTypeSelect.value = 'image'; itemDurationInput.value = '10'; toggleDurationInput();
         });
-        // Para que la validación de YT funcione, necesitamos la función aquí también o referenciarla globalmente
-        // Como es una función simple, la duplicamos (o podríamos ponerla en un script global)
-        function extractVideoID(url) { /* Misma función que en index.html */
-            try { const urlObj = new URL(url); let videoId = urlObj.searchParams.get('v'); if (!videoId && urlObj.hostname === 'youtu.be') videoId = urlObj.pathname.slice(1); if (videoId && videoId.length === 11) return videoId; } catch (e) {} if (typeof url === 'string' && url.length === 11 && !url.includes('/')) return url; return null;
-        }
+
+        function extractVideoID(url) { try { const urlObj = new URL(url); let videoId = urlObj.searchParams.get('v'); if (!videoId && urlObj.hostname === 'youtu.be') videoId = urlObj.pathname.slice(1); if (videoId && videoId.length === 11) return videoId; } catch (e) {} if (typeof url === 'string' && url.length === 11 && !url.includes('/')) return url; return null; }
 
         window.deleteItem = (index) => {
-            if (confirm(`CONFIRMAR ELIMINACIÓN:\n${currentPlaylist[index].url}\n\n¿Proceder con la purga de este elemento de la secuencia?`)) {
-                currentPlaylist.splice(index, 1); savePlaylistToFirebase();
-            }
-        }
+            if (!auth.currentUser || auth.currentUser.uid !== 'eRKsZnCe0TXZ4JagmcVAik7IX8T2') { alert("Acción no permitida."); return; }
+            if (confirm(`CONFIRMAR ELIMINACIÓN:\n${currentPlaylist[index].url}\n\n¿Proceder con la purga de este elemento de la secuencia?`)) { currentPlaylist.splice(index, 1); savePlaylistToFirebase(); }
+        };
         window.moveItem = (index, direction) => {
-             let changed = false;
-             if (direction === -1 && index > 0) { [currentPlaylist[index], currentPlaylist[index - 1]] = [currentPlaylist[index - 1], currentPlaylist[index]]; changed = true; }
-             else if (direction === 1 && index < currentPlaylist.length - 1) { [currentPlaylist[index], currentPlaylist[index + 1]] = [currentPlaylist[index + 1], currentPlaylist[index]]; changed = true; }
-             if (changed) savePlaylistToFirebase();
+            if (!auth.currentUser || auth.currentUser.uid !== 'eRKsZnCe0TXZ4JagmcVAik7IX8T2') { alert("Acción no permitida."); return; }
+            let changed = false;
+            if (direction === -1 && index > 0) { [currentPlaylist[index], currentPlaylist[index - 1]] = [currentPlaylist[index - 1], currentPlaylist[index]]; changed = true; }
+            else if (direction === 1 && index < currentPlaylist.length - 1) { [currentPlaylist[index], currentPlaylist[index + 1]] = [currentPlaylist[index + 1], currentPlaylist[index]]; changed = true; }
+            if (changed) savePlaylistToFirebase();
+        };
+
+        function attachPlaylistListener() {
+            playlistRef.on('value', (snapshot) => {
+                const data = snapshot.val(); currentPlaylist = data ? Object.values(data) : []; renderPlaylist();
+            }, (error) => {
+                console.error("Error leyendo playlist:", error);
+                playlistListUl.innerHTML = '<li class="error-list-item">ERROR CRÍTICO: Fallo de conexión al núcleo de datos.</li>';
+            });
+            playlistListenerAttached = true; console.log("Listener de playlist adjuntado.");
         }
-        playlistRef.on('value', (snapshot) => {
-            const data = snapshot.val(); currentPlaylist = data ? Object.values(data) : [];
-            renderPlaylist();
-        }, (error) => {
-            playlistListUl.innerHTML = '<li class="error-list-item">ERROR CRÍTICO: Fallo de conexión al núcleo de datos.</li>';
-        });
     </script>
 </body>
 </html>

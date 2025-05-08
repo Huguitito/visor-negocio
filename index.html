@@ -7,25 +7,45 @@
     <link rel="stylesheet" href="style.css">
     <style>
         /* Estilos inline para asegurar fullscreen y layout base */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: black; }
-        #display-area { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; background-color: black; opacity: 1; transition: opacity 0.6s ease-in-out; }
-        #display-area.fading-out { opacity: 0; }
-        #display-area img, #display-area video { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
-        #display-area iframe, #youtube-player-container { width: 100%; height: 100%; border: none; }
-        #display-area p { color: white; font-size: 1.5em; text-align: center; padding: 40px; } /* Estilo mensajes */
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: #0a0a0f; /* Fondo muy oscuro */
+        }
+        #display-area {
+            width: 100%; height: 100%; display: flex;
+            justify-content: center; align-items: center;
+            overflow: hidden; background-color: #0a0a0f; /* Coincide con body */
+            opacity: 1;
+            transition: opacity 0.7s cubic-bezier(0.25, 0.1, 0.25, 1); /* Transición más suave */
+        }
+        #display-area.fading-out {
+            opacity: 0;
+        }
+        #display-area img, #display-area video {
+            display: block; max-width: 100%; max-height: 100%;
+            width: auto; height: auto; object-fit: contain;
+            border-radius: 4px; /* Bordes sutilmente redondeados para contenido (opcional) */
+        }
+        #display-area iframe, #youtube-player-container {
+            width: 100%; height: 100%; border: none;
+        }
     </style>
 </head>
 <body>
-    <div id="display-area"> <!-- Contenido dinámico --> </div>
+    <div id="display-area">
+        <!-- Contenido dinámico -->
+    </div>
+
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <script>
-        // --- CONFIGURACIÓN FIREBASE (CORREGIDA) ---
+        // --- CONFIGURACIÓN FIREBASE (TUS CREDENCIALES) ---
         const firebaseConfig = {
           apiKey: "AIzaSyAir6pUHwf-vCJ7Tt8yDBpmw4n1jml7oE8",
           authDomain: "visor-negocio.firebaseapp.com",
-          // databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com", // <-- COMENTADO
+          databaseURL: "https://visor-negocio-default-rtdb.firebaseio.com",
           projectId: "visor-negocio",
           storageBucket: "visor-negocio.appspot.com",
           messagingSenderId: "113061044521",
@@ -33,16 +53,7 @@
         };
         // --------------------------------------------------
 
-        // --- INICIALIZACIÓN Y LÓGICA DEL VISOR ---
-        try {
-            firebase.initializeApp(firebaseConfig);
-            console.log("[Visor] Firebase inicializado correctamente.");
-        } catch (e) {
-            console.error("[Visor] !!! ERROR GRAVE: Falló firebase.initializeApp() !!!", e);
-            document.getElementById('display-area').innerHTML = `<p>Error Crítico: No se pudo inicializar Firebase.</p>`;
-            throw new Error("Firebase Init Failed");
-        }
-
+        firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const playlistRef = database.ref('playlist');
 
@@ -50,235 +61,116 @@
         let currentItemIndex = 0;
         let currentTimeoutId = null;
         const displayArea = document.getElementById('display-area');
-        const FADE_DURATION_MS = 600;
+        const FADE_DURATION_MS = 700; // Coincide con CSS (0.7s)
 
         let ytPlayer;
         let youtubeApiReady = false;
 
-        // --- FUNCIONES AUXILIARES ---
-        function onYouTubeIframeAPIReady() {
-            console.log("[YT Debug] >>> onYouTubeIframeAPIReady() llamada. API lista."); // LOG YT API
-            youtubeApiReady = true;
-        }
+        function onYouTubeIframeAPIReady() { youtubeApiReady = true; }
 
         function extractVideoID(url) {
-            let videoId = null;
-            console.log("[YT Debug] Intentando extraer ID de:", url); // LOG URL Entrada
              try {
                 const urlObj = new URL(url);
-                 videoId = urlObj.searchParams.get('v');
-                 if (!videoId && urlObj.hostname === 'youtu.be') {
-                    videoId = urlObj.pathname.slice(1);
-                 }
-                 // Limpiar parámetros extra si los hubiera (ej: &list=...)
-                 if (videoId && videoId.includes('&')) {
-                    videoId = videoId.split('&')[0];
-                 }
-                 if (!(videoId && videoId.length === 11)) videoId = null; // Validación básica
-            } catch (e) {
-                console.warn("[YT Debug] No se pudo parsear como URL completa:", url);
-             }
-             // Fallback si es solo ID
-            if (!videoId && typeof url === 'string' && url.length === 11 && !url.includes('/')) {
-                 videoId = url;
-             }
-            console.log("[YT Debug] ID extraído:", videoId); // LOG ID Salida
-            return videoId;
+                 let videoId = urlObj.searchParams.get('v');
+                 if (!videoId && urlObj.hostname === 'youtu.be') videoId = urlObj.pathname.slice(1);
+                 if (videoId && videoId.length === 11) return videoId;
+            } catch (e) {}
+            if (typeof url === 'string' && url.length === 11 && !url.includes('/')) return url;
+            return null;
         }
 
         function cleanupSpecificPlayers() {
              if (currentTimeoutId) clearTimeout(currentTimeoutId);
              currentTimeoutId = null;
              if (ytPlayer && typeof ytPlayer.destroy === 'function') {
-                 try { ytPlayer.destroy(); console.log("[Visor] Reproductor YT destruido."); }
-                 catch(e) { console.error("[Visor] Error destruyendo YT:", e); }
+                 try { ytPlayer.destroy(); } catch(e) {}
                  ytPlayer = null;
              }
         }
 
-        // --- FUNCIÓN PRINCIPAL DE REPRODUCCIÓN ---
         function playNextItem() {
-            console.log(`[Visor] Iniciando playNextItem para índice ${currentItemIndex}...`);
             displayArea.classList.add('fading-out');
-
             setTimeout(() => {
                 cleanupSpecificPlayers();
-                while (displayArea.firstChild) { displayArea.removeChild(displayArea.firstChild); }
+                while (displayArea.firstChild) displayArea.removeChild(displayArea.firstChild);
 
                 if (!currentPlaylist || currentPlaylist.length === 0) {
-                    displayArea.innerHTML = '<p>Esperando contenido...</p>';
+                    displayArea.innerHTML = '<p style="color: #c0c0ff; font-size: 1.8em; text-shadow: 0 0 5px #00ffff;">Esperando datos del hyperespacio...</p>';
                     displayArea.classList.remove('fading-out');
-                    console.log("[Visor] Playlist vacía, esperando actualización.");
                     return;
                 }
 
-                if (currentItemIndex >= currentPlaylist.length) { currentItemIndex = 0; }
+                if (currentItemIndex >= currentPlaylist.length) currentItemIndex = 0;
                 const item = currentPlaylist[currentItemIndex];
-                console.log(`[Visor] Preparando item ${currentItemIndex}: Tipo=${item.type}, URL=${item.url}`);
-
                 let advanceIndexManually = true;
 
                 switch (item.type) {
                     case 'image':
-                        /* ... (igual que antes) ... */
                         const img = document.createElement('img'); img.src = item.url;
-                        img.onerror = () => { console.error("[Visor] Error img:", item.url); currentItemIndex++; playNextItem(); };
+                        img.onerror = () => { currentItemIndex++; playNextItem(); };
                         displayArea.appendChild(img);
-                        currentTimeoutId = setTimeout(playNextItem, (item.duration || 10) * 1000); // Añadido default duration
+                        currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
                         break;
                     case 'video':
-                        /* ... (igual que antes, mute: 1 recomendado) ... */
-                        const video = document.createElement('video'); video.src = item.url; video.autoplay = true; video.muted = true; // Muted
-                        video.controls = false;
-                        video.onerror = () => { console.error("[Visor] Error video:", item.url); currentItemIndex++; playNextItem(); };
-                        video.addEventListener('ended', () => { console.log("[Visor] Video MP4 finalizado."); currentItemIndex++; playNextItem(); });
-                        displayArea.appendChild(video);
-                        advanceIndexManually = false;
+                        const video = document.createElement('video'); video.src = item.url;
+                        video.autoplay = true; video.muted = true; video.controls = false;
+                        video.onerror = () => { currentItemIndex++; playNextItem(); };
+                        video.addEventListener('ended', () => { currentItemIndex++; playNextItem(); });
+                        displayArea.appendChild(video); advanceIndexManually = false;
                         break;
                     case 'webpage':
-                        /* ... (igual que antes) ... */
-                         const iframe = document.createElement('iframe'); iframe.src = item.url; iframe.onerror = () => { console.warn("[Visor] Error iframe:", item.url); };
-                         displayArea.appendChild(iframe);
-                         currentTimeoutId = setTimeout(playNextItem, (item.duration || 10) * 1000); // Añadido default duration
+                        const iframe = document.createElement('iframe'); iframe.src = item.url;
+                        iframe.onerror = () => console.warn("Error iframe:", item.url);
+                        displayArea.appendChild(iframe);
+                        currentTimeoutId = setTimeout(playNextItem, item.duration * 1000);
                         break;
-
-                    // --- CASO YOUTUBE CON DEBUGGING ---
                     case 'youtube':
-                        console.log("[YT Debug] Procesando item YouTube:", item.url);
                         const videoId = extractVideoID(item.url);
-
-                        if (!videoId) {
-                            console.error("[YT Debug] ERROR: No se pudo obtener Video ID válido. Saltando item.");
-                            setTimeout(() => { currentItemIndex++; playNextItem(); }, 100);
-                            advanceIndexManually = false; // Ya estamos avanzando el índice
-                            break; // Salir del switch
-                        }
-
-                        if (!youtubeApiReady) {
-                            console.warn("[YT Debug] ADVERTENCIA: API YouTube no lista. Reintentando en 1s...");
-                            currentTimeoutId = setTimeout(playNextItem, 1000); // Reintentar ESTE MISMO item
-                            advanceIndexManually = false; // No avanzar índice todavía
-                            break; // Salir del switch
-                        }
-
-                        console.log("[YT Debug] API lista. Creando contenedor para YT Player...");
-                        const ytContainer = document.createElement('div');
-                        ytContainer.id = 'youtube-player-container';
+                        if (!videoId) { setTimeout(() => { currentItemIndex++; playNextItem(); }, 100); advanceIndexManually = false; break; }
+                        if (!youtubeApiReady) { currentTimeoutId = setTimeout(playNextItem, 1000); advanceIndexManually = false; break; }
+                        const ytContainer = document.createElement('div'); ytContainer.id = 'youtube-player-container';
                         displayArea.appendChild(ytContainer);
-
-                        console.log(`[YT Debug] Llamando a new YT.Player con ID: ${videoId}`);
-                        try {
-                             ytPlayer = new YT.Player('youtube-player-container', {
-                                height: '100%', width: '100%', videoId: videoId,
-                                playerVars: {
-                                    'autoplay': 1, 'controls': 0, 'showinfo': 0, 'rel': 0,
-                                    'modestbranding': 1, 'loop': 0, 'fs': 0, 'cc_load_policy': 0,
-                                    'iv_load_policy': 3, 'autohide': 0,
-                                    'mute': 1 // Muted para autoplay fiable
-                                },
-                                events: {
-                                    'onReady': onPlayerReady,
-                                    'onStateChange': onPlayerStateChange,
-                                    'onError': onPlayerError
-                                }
-                            });
-                             console.log("[YT Debug] YT.Player instanciado (esperando eventos).");
-                        } catch (e) {
-                             console.error("[YT Debug] !!! ERROR CRÍTICO al instanciar YT.Player:", e);
-                             // Si falla la creación, saltar al siguiente item
-                             setTimeout(() => { currentItemIndex++; playNextItem(); }, 100);
-                        }
-                        advanceIndexManually = false; // Los eventos se encargarán
-                        break; // Fin case 'youtube'
-
+                        ytPlayer = new YT.Player('youtube-player-container', {
+                            height: '100%', width: '100%', videoId: videoId,
+                            playerVars: { 'autoplay': 1, 'controls': 0, 'showinfo': 0, 'rel': 0, 'modestbranding': 1, 'loop': 0, 'fs': 0, 'cc_load_policy': 0, 'iv_load_policy': 3, 'autohide': 0, 'mute': 1 },
+                            events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
+                        });
+                        advanceIndexManually = false;
+                        break;
                     default:
-                        /* ... (igual que antes) ... */
-                        console.warn("[Visor] Tipo desconocido:", item.type);
                         setTimeout(() => { currentItemIndex++; playNextItem(); }, 100);
                         advanceIndexManually = false;
                         break;
                 }
-
-                // Fade In (igual que antes)
-                requestAnimationFrame(() => { displayArea.classList.remove('fading-out'); });
-                // Avanzar índice si corresponde (igual que antes)
-                if (advanceIndexManually) { currentItemIndex++; }
-
-            }, FADE_DURATION_MS); // Fin setTimeout principal
-        } // Fin playNextItem
-
-        // --- HANDLERS DE EVENTOS YOUTUBE CON DEBUGGING ---
-        function onPlayerReady(event) {
-            console.log("[YT Debug] >>> Evento: onPlayerReady disparado para video:", event.target.getVideoData().title);
-            // playVideo() puede ser necesario aunque autoplay=1
-            try {
-                 event.target.playVideo();
-                 console.log("[YT Debug] onPlayerReady: playVideo() llamado.");
-            } catch (e) {
-                 console.error("[YT Debug] onPlayerReady: Error llamando a playVideo():", e);
-            }
+                requestAnimationFrame(() => displayArea.classList.remove('fading-out'));
+                if (advanceIndexManually) currentItemIndex++;
+            }, FADE_DURATION_MS);
         }
 
-        function onPlayerStateChange(event) {
-            let stateName = 'UNKNOWN';
-            switch(event.data) {
-                case -1: stateName = 'UNSTARTED'; break;
-                case YT.PlayerState.ENDED: stateName = 'ENDED'; break;
-                case YT.PlayerState.PLAYING: stateName = 'PLAYING'; break;
-                case YT.PlayerState.PAUSED: stateName = 'PAUSED'; break;
-                case YT.PlayerState.BUFFERING: stateName = 'BUFFERING'; break;
-                case YT.PlayerState.CUED: stateName = 'CUED'; break;
-            }
-            console.log(`[YT Debug] >>> Evento: onStateChange disparado. Nuevo estado: ${event.data} (${stateName})`);
+        function onPlayerReady(event) { event.target.playVideo(); }
+        function onPlayerStateChange(event) { if (event.data == YT.PlayerState.ENDED) { currentItemIndex++; playNextItem(); } }
+        function onPlayerError(event) { console.error("Error YT:", event.data); currentItemIndex++; playNextItem(); }
 
-            if (event.data == YT.PlayerState.ENDED) {
-                console.log("[YT Debug] Estado ENDED detectado. Avanzando al siguiente item...");
-                currentItemIndex++;
-                playNextItem();
-            }
-            // Podrías añadir lógica aquí si se queda en PAUSED o BUFFERING mucho tiempo
-        }
-
-        function onPlayerError(event) {
-            // Códigos de error comunes: 2 (ID inválido), 5 (error HTML5), 100 (no encontrado), 101/150 (prohibido embeber)
-            console.error(`[YT Debug] !!! >>> Evento: onError disparado. Código de error: ${event.data}`);
-            currentItemIndex++;
-            playNextItem(); // Saltar al siguiente
-        }
-
-        // --- LISTENER FIREBASE (igual que antes) ---
-        initialLoadComplete = false;
+        let initialLoadComplete = false;
         playlistRef.on('value', (snapshot) => {
-            // ... (lógica igual que antes para actualizar currentPlaylist y llamar a playNextItem) ...
-             console.log("[Visor] Datos recibidos de Firebase!");
-             const data = snapshot.val();
-             const newPlaylist = data ? Object.values(data) : [];
-             if (JSON.stringify(newPlaylist) !== JSON.stringify(currentPlaylist) || !initialLoadComplete) {
-                 console.log("[Visor] Playlist actualizada/inicial:", newPlaylist);
-                 currentPlaylist = newPlaylist;
-                 currentItemIndex = 0;
-                 if (initialLoadComplete) {
-                     if (currentTimeoutId) clearTimeout(currentTimeoutId);
-                     playNextItem();
-                 } else if (currentPlaylist.length > 0) {
-                     console.log("[Visor] Carga inicial completa, iniciando reproducción...");
-                     initialLoadComplete = true;
-                     setTimeout(playNextItem, 100); // Pequeño delay post-carga inicial
-                 } else {
-                      console.log("[Visor] Carga inicial, lista vacía.");
-                      displayArea.innerHTML = '<p>Playlist vacía...</p>';
-                      displayArea.classList.remove('fading-out');
-                 }
-             } else {
-                 console.log("[Visor] Playlist recibida sin cambios.");
-             }
-         }, (error) => {
-            console.error("[Visor] !!! ERROR en listener de DB:", error.code, error.message);
+            const data = snapshot.val(); const newPlaylist = data ? Object.values(data) : [];
+            if (JSON.stringify(newPlaylist) !== JSON.stringify(currentPlaylist) || !initialLoadComplete) {
+                currentPlaylist = newPlaylist; currentItemIndex = 0;
+                if (initialLoadComplete) {
+                    if (currentTimeoutId) clearTimeout(currentTimeoutId);
+                    playNextItem();
+                } else if (currentPlaylist.length > 0) {
+                    initialLoadComplete = true; setTimeout(playNextItem, 100);
+                } else {
+                    displayArea.innerHTML = '<p style="color: #c0c0ff; font-size: 1.8em; text-shadow: 0 0 5px #00ffff;">Playlist vacía. Conectando a la Matrix de control...</p>';
+                    displayArea.classList.remove('fading-out');
+                }
+            }
+        }, (error) => {
             displayArea.classList.remove('fading-out');
-            displayArea.innerHTML = `<p>Error leyendo datos: ${error.message}</p>`;
-         });
-
-        console.log("[Visor] index.html inicializado. Esperando datos...");
+            displayArea.innerHTML = '<p style="color: #ff4d4d; font-size: 1.8em; text-shadow: 0 0 5px #ff0000;">ERROR CRÍTICO: Fallo de conexión al núcleo.</p>';
+        });
+        console.log("Visor V2.1: Sistema online. Esperando transmisión de datos...");
     </script>
 </body>
 </html>

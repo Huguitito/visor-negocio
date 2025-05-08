@@ -1,216 +1,309 @@
-/* --- Estilos Generales --- */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    color: #333;
-    /* background-color se define específico abajo si es necesario */
+/* --- Variables CSS para el tema --- */
+:root {
+    --primary-font: 'Poppins', sans-serif; /* Fuente principal */
+    --base-bg-color: #0a0a0f; /* Fondo muy oscuro, casi negro con tinte azulado */
+    --surface-bg-color: #14141c; /* Fondo para "tarjetas" o secciones */
+    --surface-border-color: #2a2a3a; /* Borde sutil para superficies */
+    --text-primary-color: #e0e0ff; /* Texto principal, blanco azulado claro */
+    --text-secondary-color: #a0a0cc; /* Texto secundario, más grisáceo */
+    --accent-color: #00ffff; /* Cian brillante para acentos */
+    --accent-color-darker: #00cccc; /* Cian más oscuro para hovers */
+    --danger-color: #ff4d4d; /* Rojo para alertas/peligro */
+    --input-bg-color: #0f0f16; /* Fondo para inputs */
+    --input-border-color: #303040;
+    --input-focus-border-color: var(--accent-color);
+    --glow-shadow: 0 0 8px rgba(0, 255, 255, 0.5), 0 0 16px rgba(0, 255, 255, 0.3); /* Sombra tipo glow */
 }
 
-h1, h2 {
-    color: #1c1e21; /* Azul oscuro tipo Facebook/Meta */
-    text-align: center;
-    margin-top: 0.5em; /* Espacio superior reducido */
-    margin-bottom: 1em;
+/* --- Importar Fuente --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Exo+2:wght@300;400;600;700&display=swap');
+/* Puedes cambiar 'Poppins' por 'Exo 2' si prefieres un look más "tech" */
+
+/* --- Estilos Generales --- */
+body {
+    font-family: var(--primary-font);
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary-color);
+    line-height: 1.6;
 }
 
 /* --- Estilos para index.html (Visor Fullscreen) --- */
-/* La mayoría de los estilos críticos (fullscreen, centrado, transición)
-   están ahora definidos inline en index.html para mayor seguridad.
-   Aquí podemos poner estilos generales si fueran necesarios,
-   pero los inline tienen prioridad. */
-
-/* Estilo para el mensaje de error o espera en index.html */
-#display-area p {
-    color: white;
-    font-size: 1.5em;
-    text-align: center;
-    padding: 40px;
+/* (Estilos críticos inline en index.html. Esto es por si algo más se necesita) */
+body:not(.control-page) { /* Aplicar solo si NO es la página de control */
+    background-color: var(--base-bg-color);
 }
-
 
 /* --- Estilos para control.html (Panel de Control) --- */
-
-/* Estilos específicos para el body del panel de control */
-body.control-page {
-     background-color: #f0f2f5; /* Fondo grisáceo claro */
-     padding: 20px; /* Espacio alrededor del contenido */
-     height: auto; /* Altura determinada por el contenido */
-     min-height: 100vh; /* Asegura que ocupe al menos toda la altura visible */
-     overflow-y: auto; /* Permite scroll vertical PARA TODA LA PÁGINA si el contenido es más alto que la ventana */
-     box-sizing: border-box; /* Incluye padding en el cálculo de la altura/anchura */
+.control-page {
+     background: linear-gradient(135deg, #0d0d1f 0%, #05050a 100%); /* Gradiente sutil */
+     padding: 25px;
+     min-height: 100vh;
+     box-sizing: border-box;
+     overflow-x: hidden; /* Prevenir scroll horizontal accidental */
 }
 
-/* Estilos para las secciones principales del panel */
+.main-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+    border-bottom: 1px solid var(--surface-border-color);
+}
+.main-header h1 {
+    font-family: 'Exo 2', sans-serif; /* Fuente más tech para el título principal */
+    font-size: 2.8em;
+    margin: 0;
+    color: var(--text-primary-color);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.glow-text {
+    color: var(--accent-color);
+    text-shadow: var(--glow-shadow);
+}
+.main-header .subtitle {
+    font-size: 1.1em;
+    color: var(--text-secondary-color);
+    margin-top: 5px;
+}
+
 .control-section {
-    background-color: #ffffff; /* Fondo blanco */
-    padding: 20px 25px; /* Padding interior (vertical, horizontal) */
-    margin: 20px auto; /* Margen superior/inferior, centrado horizontal */
-    border-radius: 8px; /* Bordes redondeados */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1); /* Sombra suave */
-    width: 90%; /* Ancho relativo */
-    max-width: 750px; /* Ancho máximo */
-    box-sizing: border-box; /* Padding/border incluidos en width */
+    background-color: var(--surface-bg-color);
+    padding: 25px 30px;
+    margin: 30px auto;
+    border-radius: 12px; /* Bordes más redondeados */
+    border: 1px solid var(--surface-border-color);
+    box-shadow: 0 5px 25px rgba(0,0,0,0.3), inset 0 0 15px rgba(10,10,20,0.5); /* Sombra más profunda e interior */
+    width: 90%;
+    max-width: 800px;
+    box-sizing: border-box;
+    position: relative; /* Para pseudo-elementos de borde si se necesitaran */
+}
+/* Efecto de borde superior con acento */
+.control-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    opacity: 0.7;
 }
 
-/* Estilos para etiquetas de formulario */
+
+.control-section h2 {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 1.6em;
+    color: var(--text-primary-color);
+    margin-top: 0;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--input-border-color);
+    display: flex;
+    align-items: center;
+}
+.control-section h2 .icon {
+    margin-right: 12px;
+    font-size: 1.3em;
+    color: var(--accent-color);
+}
+
 label {
-    display: block; /* Ocupa su propia línea */
-    margin-top: 15px; /* Espacio antes de la etiqueta */
-    margin-bottom: 5px; /* Espacio después de la etiqueta, antes del input */
-    font-weight: 600; /* Semi-negrita */
-    color: #606770; /* Gris oscuro */
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    font-weight: 500; /* Un poco más grueso */
+    color: var(--text-secondary-color);
     font-size: 0.95em;
+    text-transform: uppercase; /* Estilo tech */
+    letter-spacing: 0.5px;
 }
 
-/* Estilos para inputs de texto/email/password/número y selects */
 input[type="url"],
-input[type="email"],
-input[type="password"],
 input[type="number"],
 select {
-    width: 100%; /* Ocupa todo el ancho disponible */
-    padding: 12px; /* Padding interior */
-    margin-bottom: 15px; /* Espacio después del input */
-    border: 1px solid #ccd0d5; /* Borde grisáceo */
-    border-radius: 6px; /* Bordes redondeados */
-    box-sizing: border-box; /* Padding/border incluidos en width */
+    width: 100%;
+    padding: 14px 18px; /* Más padding */
+    margin-bottom: 12px;
+    background-color: var(--input-bg-color);
+    border: 1px solid var(--input-border-color);
+    color: var(--text-primary-color);
+    border-radius: 8px;
+    box-sizing: border-box;
     font-size: 1em;
+    font-family: var(--primary-font);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-
-/* Estilos generales para botones */
-button {
-    background-color: #1877f2; /* Azul Facebook */
-    color: white;
-    padding: 10px 18px; /* Padding interior */
-    border: none; /* Sin borde */
-    border-radius: 6px; /* Bordes redondeados */
-    cursor: pointer; /* Cursor de mano */
-    font-size: 1em;
-    font-weight: bold; /* Texto en negrita */
-    margin-right: 8px; /* Espacio a la derecha si hay varios botones */
-    margin-top: 10px; /* Espacio superior para separar de inputs */
-    transition: background-color 0.2s ease; /* Transición suave al pasar el ratón */
+input[type="url"]:focus,
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--input-focus-border-color);
+    box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.2); /* Glow al enfocar */
 }
-button:hover {
-    background-color: #166fe5; /* Azul un poco más oscuro al pasar */
-}
-button:disabled {
-    background-color: #e4e6eb; /* Fondo gris claro */
-    color: #bcc0c4; /* Texto gris claro */
-    cursor: not-allowed; /* Cursor de no permitido */
-}
-
-/* Estilo específico para el botón de Logout (opcional, si quieres diferenciarlo) */
-#logout-btn {
-    background-color: #f02849; /* Rojo */
-    font-weight: normal;
-    font-size: 0.9em;
-    padding: 8px 12px;
-}
-#logout-btn:hover {
-    background-color: #d91f3c; /* Rojo más oscuro */
-}
-
-/* Estilo para el mensaje de estado del admin */
-#admin-status {
-    font-size: 0.9em;
-    color: #606770;
-}
-
-/* Estilo para mensajes de error (login o otros) */
-.error-message {
-    color: #dc3545; /* Rojo oscuro (texto) */
-    font-weight: bold;
-    margin-top: 15px; /* Espacio superior */
-    padding: 10px 12px; /* Padding interior */
-    border: 1px solid #f5c6cb; /* Borde rojo claro */
-    border-radius: 4px; /* Bordes redondeados */
-    background-color: #f8d7da; /* Fondo rojo muy claro */
-    font-size: 0.9em;
+select {
+    appearance: none; /* Quitar estilo nativo */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a0a0cc' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    padding-right: 40px; /* Espacio para el icono de flecha */
 }
 
 
-/* --- Lista de Reproducción en control.html --- */
+button.primary-button {
+    display: block; /* Ocupar todo el ancho */
+    width: 100%;
+    background: linear-gradient(45deg, var(--accent-color), var(--accent-color-darker));
+    color: var(--base-bg-color); /* Texto oscuro para contraste */
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 25px;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 200, 200, 0.2);
+}
+button.primary-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 255, 255, 0.3);
+}
+button.primary-button:disabled {
+    background: var(--surface-border-color);
+    color: var(--text-secondary-color);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+button.primary-button .icon {
+    margin-right: 8px;
+}
 
-/* Contenedor de la lista (UL) */
+
+/* Lista de Reproducción */
 #playlist-list {
-    list-style: none; /* Sin viñetas */
-    padding: 0; /* Sin padding por defecto del UL */
-    margin: 20px 0 0 0; /* Margen superior, sin margen inferior/lados */
-    /* SIN max-height NI overflow-y: auto; para que se expanda */
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
 }
 
-/* Cada elemento de la lista (LI) */
 #playlist-list li {
-    background-color: #ffffff; /* Fondo blanco */
-    margin-bottom: 8px; /* Espacio entre elementos */
-    padding: 10px 15px; /* Padding interior */
-    border-radius: 6px; /* Bordes redondeados */
-    display: flex; /* Para alinear contenido y botones */
-    justify-content: space-between; /* Espacio entre contenido y botones */
-    align-items: center; /* Centrado vertical */
-    flex-wrap: wrap; /* Permite que los botones bajen en pantallas pequeñas */
-    border: 1px solid #e4e6eb; /* Borde gris claro */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Sombra muy sutil */
-    /* Transición opcional si animas algo */
-    /* transition: background-color 0.2s ease; */
+    background-color: rgba(10,10,20,0.3); /* Fondo más oscuro y translúcido para items */
+    margin-bottom: 10px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    border: 1px solid var(--surface-border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-/* #playlist-list li:hover { background-color: #f9f9f9; } */ /* Efecto hover opcional */
-
-
-/* Contenido del item (span con emoji, tipo, url) */
-#playlist-list li span {
-    flex-grow: 1; /* Ocupa el espacio disponible */
-    margin-right: 15px; /* Espacio antes de los botones */
-    word-break: break-all; /* Parte palabras largas (URLs) */
-    font-size: 0.95em;
-    color: #1c1e21; /* Texto oscuro */
+#playlist-list li:hover {
+    background-color: rgba(20,20,30,0.5);
+    border-color: var(--accent-color-darker);
 }
 
-/* Contenedor de los botones de acción (div) */
-#playlist-list li div {
-    white-space: nowrap; /* Evita que los botones se separen en líneas */
-    flex-shrink: 0; /* Evita que el contenedor de botones se encoja */
+#playlist-list li .item-info {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espacio entre elementos de info */
+    margin-right: 15px; /* Espacio antes de los botones de acción */
+}
+#playlist-list li .item-icon { font-size: 1.2em; }
+#playlist-list li .item-type-tag {
+    background-color: var(--accent-color-darker);
+    color: var(--base-bg-color);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+#playlist-list li .item-url-text {
+    word-break: break-all;
+    font-size: 0.9em;
+    color: var(--text-primary-color);
+}
+#playlist-list li .duration-tag {
+    font-size: 0.8em;
+    color: var(--text-secondary-color);
+}
+#playlist-list li.empty-list-item,
+#playlist-list li.error-list-item {
+    justify-content: center;
+    font-style: italic;
+    color: var(--text-secondary-color);
+    padding: 20px;
+    background-color: transparent;
+    border-style: dashed;
+}
+#playlist-list li.error-list-item { color: var(--danger-color); }
+
+
+#playlist-list li .item-actions { display: flex; gap: 8px; }
+
+button.action-button {
+    background-color: transparent;
+    color: var(--text-secondary-color);
+    border: 1px solid var(--input-border-color);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1em; /* Para que emojis se vean bien */
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+button.action-button:hover {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background-color: rgba(0, 255, 255, 0.1);
+}
+button.action-button.danger:hover {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+    background-color: rgba(255, 77, 77, 0.1);
+}
+button.action-button:disabled {
+    color: #505060;
+    border-color: #303040;
+    cursor: not-allowed;
+    background-color: transparent;
 }
 
-/* Botones de acción dentro de la lista (más pequeños) */
-#playlist-list li button {
-    padding: 5px 8px; /* Padding más pequeño */
-    font-size: 0.9em; /* Texto más pequeño */
-    margin-left: 5px; /* Espacio entre botones */
-    margin-top: 5px; /* Espacio si se apilan verticalmente */
-    background-color: #e4e6eb; /* Fondo gris claro por defecto */
-    color: #1c1e21; /* Texto oscuro */
-    font-weight: normal; /* Sin negrita */
+
+.info-text {
+    font-size: 0.9em;
+    color: var(--text-secondary-color);
+    text-align: center;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-#playlist-list li button:hover {
-     background-color: #d8dade; /* Gris más oscuro al pasar */
-}
-#playlist-list li button:disabled {
-     background-color: #f0f2f5; /* Fondo aún más claro */
-     color: #ced0d4; /* Texto muy claro */
+.info-text .icon { margin-right: 8px; color: var(--accent-color); }
+
+
+.main-footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid var(--surface-border-color);
+    font-size: 0.85em;
+    color: var(--text-secondary-color);
 }
 
-/* Hacer emojis de botones un poco más grandes si se usan */
-#playlist-list li button[title="Mover Arriba"],
-#playlist-list li button[title="Mover Abajo"],
-#playlist-list li button[title="Eliminar"] {
-    font-size: 1.1em; /* Tamaño del emoji/texto */
-}
-
-/* Pequeños ajustes responsivos (opcional) */
+/* Responsive adjustments */
 @media (max-width: 600px) {
-    body.control-page {
-        padding: 10px; /* Menos padding en pantallas pequeñas */
-    }
-    .control-section {
-        padding: 15px;
-        margin: 15px auto;
-    }
-    h1 { font-size: 1.5em; }
-    h2 { font-size: 1.2em; }
-    button { font-size: 0.9em; padding: 8px 12px; }
-    #playlist-list li { flex-direction: column; align-items: flex-start; } /* Apilar contenido y botones */
-    #playlist-list li div { margin-top: 8px; } /* Espacio entre contenido y botones apilados */
+    .control-page { padding: 15px; }
+    .control-section { padding: 20px 15px; }
+    .main-header h1 { font-size: 2em; }
+    #playlist-list li { flex-direction: column; align-items: flex-start; gap: 10px; }
+    #playlist-list li .item-actions { margin-top: 10px; width: 100%; justify-content: flex-end; }
 }
